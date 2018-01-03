@@ -1,0 +1,6 @@
+#define VERSION @CURRENT_VERSION@
+#define MAX(a, b) ((a>b)?a:b)
+#define DECAY_FACTOR @DECAY_VAL@
+#define GRAPHICS @GRAPHICS_VAL@
+#define VERBOSE @VERBOSE_ON@
+#define BONUS @BONUS_VAL@
