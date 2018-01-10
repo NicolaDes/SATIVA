@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "Datastructure.hh"
 #include <queue>
+#include <list>
 #include "omp.h"
 #include <cassert>
 
@@ -20,12 +21,22 @@ class Solver{
 		/**
 		 * Create a new clause in the heap of the program!
 		 */
-		void newClause(std::vector<int>& lits_val);
+		void newClause(std::vector<int>& lits_val, bool learnt);
+		/**
+		 * Check if SAT is SAT under this assignment
+		 */
+		bool isSAT();
 
 		/**
 		 * Compute the CDCL procedure
 		 */
 		bool CDCL();
+		
+		/**
+		 * Return the model in wich SAT is satisfied or not
+		 */
+		std::vector<lbool> getModel(){return assignments;};
+
 
 		/**
 		 * Return the number of clauses
@@ -39,6 +50,38 @@ class Solver{
 		 * Return the number of learnts clauses
 		 */
 		int nLearnts(){return learnts.size();};
+		
+	private:
+		bool initialized=false;
+		int nClauses;
+		int nLiterals;
+		int curr_level;
+		//!< Default constraints
+		Clause* clauses; //!< List of clauses.
+		std::vector<Clause*> learnts; //!< List of learnt clauses.
+		std::vector<std::vector<Clause*> > undos;
+
+		//!< Propagation constraints
+		std::vector<Clause*>*  watches; //!< For each literal with a positive phase a list of clause to be watched if p changes value.
+		Clause* reason;
+		std::queue<Literal> propQ;
+
+		//!< Assignment values
+		std::vector<lbool> assignments; //!< Assignment indexed by variable. Size of this is the number of vars.
+		std::vector<Literal> trail; //!< List of assignment in chronological order.
+		std::vector<int> levels; //!< For each variable the level it belongs to.
+
+		template<class T>
+		inline void clear(std::vector<T>& origin){
+			std::vector<T> empty;
+			std::swap(origin, empty);
+		};
+		template<class T>
+		inline void clear(std::queue<T>& origin){
+			std::queue<T> empty;
+			std::swap(origin, empty);
+		};
+
 		/**
 		 * Return the current assignment for variable x
 		 */
@@ -46,7 +89,13 @@ class Solver{
 		/**
 		 * Return the sobstitution of assignment to literal l
 		 */
-		lbool value(Literal l){return (l.sign())?not(assignments[l.index()]):assignments[l.index()];};
+		lbool value(Literal l){
+			if(l.val()>0) return assignments[l.index()];
+			else{
+				if(assignments[l.index()]!=U) return (assignments[l.index()]==T)?F:T;
+				else return U;
+			}
+		};
 		/**
 		 * Return the current decision level
 		 */
@@ -55,12 +104,7 @@ class Solver{
 		 * Propagate operation
 		 * This method support pragma openmp operation to parallelize into nThread the propagation for each clause. The number of thread depends on CPU cores.
 		 */
-		bool propagate();
-		/**
-		 * Return the model in wich SAT is satisfied or not
-		 */
-		std::vector<lbool> getModel(){return assignments;};
-
+		Clause* propagate();
 		/**
 		 * Pick a variable
 		 */
@@ -69,7 +113,7 @@ class Solver{
 		/**
 		 * Method used to analyze the conflict
 		 */
-		int analyze();
+		int analyze(Clause* conflict);
 
 		/**
 		 * Method used to backtrack
@@ -89,27 +133,6 @@ class Solver{
 		 * Method to decay all the activities
 		 */
 		void decayActivity();
-	private:
-		bool initialized=false;
-		int nClauses;
-		int nLiterals;
-		int curr_level;
-		//!< Default constraints
-		Clause* clauses; //!< List of clauses.
-		std::vector<Clause*> learnts; //!< List of learnt clauses.
-
-		//!< Propagation constraints
-		std::vector<Clause*>*  watched_list; //!< For each literal with a positive phase a list of clause to be watched if p changes value.
-		Clause* antecedents;
-		std::queue<Literal> propQ;
-
-		//!< Conflict clause
-		Clause conflict;
-
-		//!< Assignment values
-		std::vector<lbool> assignments; //!< Assignment indexed by variable. Size of this is the number of vars.
-		std::vector<Literal> trace; //!< List of assignment in chronological order.
-		std::vector<int> levels; //!< For each variable the level it belongs to.
 
 		//!< Decay activities
 		float* activity;
@@ -129,6 +152,8 @@ class Solver{
 		 * @warning This method modifies the conflict!!
 		 */
 		void firstUIP();
+
+		void undo(Literal l);
 };
 
 //functions prototypes
@@ -145,34 +170,37 @@ class Solver{
 	 * </ul>
 	 */
 	inline bool Clause::propagate(Solver *solver, Literal* p){
-		//!< Implementation design: work only on one watched literal, so it's necessary to swap the two literals if it is not the working literal decided. W1 is the working literal (literals[0])
+		assert(size()>0);
+		//TODO: ogni variabile ha due liste, quindi vai e modifica quelle!!
+		if(literals[0]!=~*p&&literals[1]!=~*p) return true;
+		assert(literals[0]==~*p||literals[1]==~*p);
+		assert(solver->value(~*p)==F);
+	
 		if(literals[0]==~*p){
-			literals[0]=literals[1];
-			literals[1]=~*p;
+			literals[0]=literals[1];literals[1]=~*p;
 		}
+		assert(literals[1]==~*p); //!< l2 = F
 		if(solver->value(literals[0])==T){
-			for(int i=2;i<size();++i){
-				if(solver->value(literals[i])==U){
-					Literal tmp=literals[0];
-					literals[0]==literals[i];
-					literals[i]=tmp;
+	/*		for(int i=2;i<size();++i){
+				if(solver->value(literals[i])!=F){
+					Literal tmp=literals[1];
+					literals[1]=literals[i];literals[i]=tmp;
+					solver->watched_list[-literals[1].val()].push_back(this);
+					std::cout<<"swapped "<<literals[i]<<", with "<<literals[1]<<", deleted: "<<*this<<" and added to "<<-literals[1].val()<<" "<<*solver->watched_list[-literals[1].val()].back()<<"\n";
 					break;
 				}
-			}
-			solver->watched_list[-literals[0].val()].push_back(this);
+			}*/
+			solver->watches[p->val()].push_back(this);
 			return true;
 		}
-		//!< here i have a unit propagation or a conflict. I search for an other literal and if found i give to w2 and the propagation or conflict is delegate to enqueue method.
-		for(int i=2;i<size();++i){
-			if(solver->value(literals[i])==U){
+		for(int i=2; i<size();++i){
+			if(solver->value(literals[i])!=F){
 				literals[1]=literals[i];literals[i]=~*p;
-				solver->watched_list[-literals[1].val()].push_back(this);
+				solver->watches[-literals[1].val()].push_back(this);
 				return true;
 			}
 		}
-
-		//!< Here i have either a propagation unit or a conflict
-		solver->watched_list[-literals[1].val()].push_back(this);
+		solver->watches[p->val()].push_back(this);
 		return solver->enqueue(literals[0], this);
 	};
 

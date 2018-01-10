@@ -1,0 +1,1 @@
+1) Sbaglia nel trovare i conflitti. Nella propagazione prima propaga correttamente e poi non si sa il perchè ma propaga l'opposto dando come conflitto una clausola che non è di conflitto!

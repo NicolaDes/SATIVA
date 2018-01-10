@@ -41,7 +41,7 @@ namespace Dimacs{
 			if(val!=0){
 				lits_val.push_back(val);
 			}else{
-				solver.newClause(lits_val);
+				solver.newClause(lits_val, false);
 				index++;
 				i++;
 				lits_val.clear();

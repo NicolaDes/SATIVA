@@ -4,7 +4,7 @@ set (PROJECT"CDCL")
 
 project (${PROJECT} CXX)
 
-set (CURRENT_VERSION 0.1)
+set (CURRENT_VERSION 0.2)
 
 if (DECAY)
 	set (DECAY_VAL ${DECAY})
@@ -23,6 +23,12 @@ if (VERBOSE)
 	set (VERBOSE_ON 1)
 else()
 	set (VERBOSE_ON 0)
+endif()
+
+if(V)
+	set (VERIFICA_ON 1)
+else()
+	set (VERIFICA_ON 0)
 endif()
 
 

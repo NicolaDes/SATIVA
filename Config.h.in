@@ -4,3 +4,5 @@
 #define GRAPHICS @GRAPHICS_VAL@
 #define VERBOSE @VERBOSE_ON@
 #define BONUS @BONUS_VAL@
+#define ASSERT @VERIFICA_ON@
+

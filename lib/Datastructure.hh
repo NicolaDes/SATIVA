@@ -110,6 +110,7 @@
 			}
 			return (found==c.size())?true:false;
 		}
+		bool operator !=(Clause c){return !(*this==c);};
 		//TODO: da ottimizzare la ricerca e quindi la risoluzione.
 		Clause operator &(Clause c){
 			std::set<Literal> resolv_set(begin(), end());
