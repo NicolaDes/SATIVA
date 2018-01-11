@@ -11,7 +11,6 @@ void Solver::init(int nL, int nC){
 	undos = undos + nL;
 	clauses=new Clause[nC];
 	nLiterals=nL;nClauses=nC;
-	curr_level=0;
 	activity = new float[(2*nL)+1];	
 	for(int i=0; i<nL;++i){
 		*activity=0;
@@ -35,28 +34,34 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 		int learnt_size=learnts.size();
 		learnts.push_back(new Clause);
 		for(auto x : lits_val){
-			Literal l(x);
-			learnts[learnt_size]->addLiteral(l);
-			activity[l.val()]++;
+			learnts[learnt_size]->addLiteral(x);
+			activity[x.val()]++;
 		}
 		std::cout<<*learnts.back()<<" )\n";
 		reward(learnts.back());
 		return;
 	}else{
 		for(auto x : lits_val){
-			Literal l(x);
-			clauses->addLiteral(l);
-			activity[l.val()]++;
+			clauses->addLiteral(x);
+			activity[x.val()]++;
 		}
-#if VERBOSE
-		std::cout<<*clauses<<" )\n";
-#endif	
+
 		if(size==1){
-			enqueue(clauses->at(0), clauses);
+#if VERBOSE
+			std::cout<<"Unit clause will not be added, only propagated!\n";
+#endif
+#if ASSERT
+			assert(value(lits_val[0])==U);
+#endif
+			enqueue(lits_val[0]);
 		}else{
 			watches[-clauses->at(0).val()].push_back(clauses);
 			watches[-clauses->at(1).val()].push_back(clauses);
+#if VERBOSE
+			std::cout<<*clauses<<" )\n";
+#endif	
 		}
+
 		clauses=clauses+1;
 	}	
 }
@@ -120,23 +125,29 @@ bool Solver::enqueue(Literal p, Clause* c){
 		}
 	}else{
 #if VERBOSE
-		std::cout<<"Prop( "<<p<<" ) <- "<<*c<<"\n";
+		if(c!=nullptr)
+			std::cout<<"Prop( "<<p<<" ) <- "<<*c<<"\n";
 #endif
 		if(p.sign())assignments[p.index()]=F;
 		else assignments[p.index()]=T;
-		levels[p.index()]=curr_level;
-		assert(c->size()>0);
-		reason[p.val()]=*c;
+		levels[p.index()]=decisionLevel();
+#if ASSERT
+		if(c!=nullptr)
+			assert(c->size()>0);
+#endif
+		if(c!=nullptr){
+			reason[p.val()]=*c;
+			undos[p.val()].push_back(c);
+		}
 		trail.push_back(p);
 		propQ.push(p);
-		undos[p.val()].push_back(c);
 		return true;
 	}
 };
 
 int Solver::analyze(Clause* conflict, std::vector<Literal>& to_learn){
 #if ASSERT
-	assert(curr_level>0);
+	assert(decisionLevel()>0);
 #endif
 #if VERBOSE
 	std::cout<<"Starting to analyze conflict "<<*conflict<<"...\n";
@@ -157,8 +168,8 @@ int Solver::analyze(Clause* conflict, std::vector<Literal>& to_learn){
 			Literal q = p_reason[i];
 			if(!seen[q.index()]){
 				seen[q.index()]=true;
-				if(curr_level==levels[q.index()]) counter++; //!< q need to be processed
-				else if(curr_level>0){ //!< exluding curr_level = 0
+				if(decisionLevel()==levels[q.index()]) counter++; //!< q need to be processed
+				else if(decisionLevel()>0){ //!< exluding curr_level = 0
 				       to_learn.push_back(~q);
 				       btLevel=MAX(btLevel, levels[q.index()]);
 				}
@@ -202,49 +213,60 @@ void Solver::undoOne(){
 	trail.pop_back();
 };
 
-bool Solver::CDCL(){
+Literal Solver::select(){
+	int max_so_far=-1;
+	var x = 0;
+	for(int i=-nLiterals;i<nLiterals+1;++i){
+		if(max_so_far<activity[i]&&assignments[i]==U){
+			x=i;
+			max_so_far=activity[i];
+		}
+	}
+	Literal branch_variable(x);
+	return branch_variable;
+};
 
+bool Solver::CDCL(){
+	int nConflict=0;
+	
 	while(true){
 		Clause* conflict=propagate();
-		if(conflict==nullptr){
-#if ASSERT
-			for(int i=-nClauses;i<0;++i){
-				bool sat=false;
-				for(int j=0; j<clauses[i].size();++j){
-					if(value(clauses[i][j])==T||value(clauses[i][j])==U)
-						sat=true;
-				}
-			assert(sat);
-			}
-#endif
-			if(isAllSigned()) return true;
-			else assume();
-
-		}else{
-			if(curr_level==0)
-				return false;
-			std::vector<Literal> to_learn;
-			int bt_level = analyze(conflict, to_learn);
+		if(conflict!=nullptr){ //!< Exist a conflict
+			std::vector<Literal> to_learn;int btLevel;
+			if(decisionLevel()==root_level) return false;
+			btLevel=analyze(conflict, to_learn);
+			backtrack(btLevel);
 			record(to_learn);
-			if(curr_level==0) return false;
-			else backtrack(bt_level);
+			decayActivity();
+		}else{
+#if ASSERT
+			assert(canBeSAT());
+#endif
+			if(decisionLevel()==0) simplify();
+			if(learnts.size()-nAssigns()>=learnts.size()) reduceLearnts();
+			if(nAssigns()==nLiterals) return true;
+			else if(nClauses==max_conflict) backtrack(root_level);
+			else{
+				Literal p = select();
+				assume(p);
+			}
 		}
-		decayActivity();
 	};
+	assert(false);
 };
 
 void Solver::backtrack(int btLevel){
-	while(curr_level>btLevel) cancel();
+	while(decisionLevel()>btLevel) cancel();
 };
 
+void Solver::simplify(){};
+
+void Solver::reduceLearnts(){};
+
 void Solver::cancel(){
-	Literal p=trail.back();
-	while(reason[p.val()].size()==0){
-		undoOne();	
-		p=trail.back();
-	}
-	trail.pop_back(); //!< delete decision
-	curr_level--;
+	int c=trail.size()-trail_lim.back();
+	for(;c!=0;c--) undoOne();
+	trail_lim.pop_back();
 };
 
 void Solver::restart(){
@@ -254,38 +276,20 @@ void Solver::restart(){
 	backtrack(0);
 }
 
-bool Solver::isAllSigned(){
-	int i;int MAX=nLiterals+1;bool yes=true;
-	#pragma omp parallel for private(i, MAX) 
-	for(i=1;i<MAX;i++){
-		if(assignments[i]!=U)yes=yes&&true;
-		else yes=yes&&false;
+int Solver::nAssigns(){
+	int counter=0;
+	for(int i=1; i<assignments.size();++i){
+		if(assignments[i]!=U) counter++;
 	}
-	return yes;
+	return counter;
 };
 
-bool Solver::assume(){
-	int max=-1;int index=0;
-	for(int i=-nLiterals; i<nLiterals+1;++i){
-		if(i==0||i==-0) continue;
-		if(assignments[i]==U&&activity[i]>max){
-			max=activity[index];
-			index=i;
-		}
-	}
-	Literal l(index);
+bool Solver::assume(Literal& p){
+	trail_lim.push_back(trail.size());
 #if VERBOSE
-	std::cout<<"decide("<<l<<")\n";
+	std::cout<<"Assume( "<<p<<" )\n";
 #endif
-	trail.push_back(l);
-	propQ.push(l);
-	
-	if(index>0) assignments[l.index()]=T;
-	else assignments[l.index()]=F;
-	
-	curr_level++;
-	levels[l.index()]=curr_level;
-	return true;
+	return enqueue(p);
 };
 
 void Solver::decayActivity(){
@@ -306,6 +310,18 @@ bool Solver::isSAT(){
 			std::cout<<"Clause "<<i<<" is not satisfied!\n";       
 			return false;
 		}
+	}
+	return true;
+};
+
+bool Solver::canBeSAT(){
+	for(int i=-nClauses;i<0;++i){
+		bool sat=false;
+		for(int j=0; j<clauses[i].size();++j){
+			if(value(clauses[i][j])==T||value(clauses[i][j])==U)
+				sat=true;
+		}
+		if(!sat)return false;
 	}
 	return true;
 };

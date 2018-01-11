@@ -15,6 +15,7 @@ class Solver{
 
 		/**
 		 * Init the solver allocating the necessary memory on the heap
+		 * @warning To use the solver, this method is foundamental
 		 */
 		void init(int nL, int nC);
 
@@ -26,7 +27,6 @@ class Solver{
 		 * Check if SAT is SAT under this assignment
 		 */
 		bool isSAT();
-
 		/**
 		 * Compute the CDCL procedure
 		 */
@@ -52,10 +52,14 @@ class Solver{
 		int nLearnts(){return learnts.size();};
 		
 	private:
+		//!< Constants values
+		const int root_level=0;
+		int max_conflict;
+
+
 		bool initialized=false;
 		int nClauses;
 		int nLiterals;
-		int curr_level;
 		//!< Default constraints
 		Clause* clauses; //!< List of clauses.
 		std::vector<Clause*> learnts; //!< List of learnt clauses.
@@ -69,6 +73,7 @@ class Solver{
 		//!< Assignment values
 		std::vector<lbool> assignments; //!< Assignment indexed by variable. Size of this is the number of vars.
 		std::vector<Literal> trail; //!< List of assignment in chronological order.
+		std::vector<int> trail_lim;
 		std::vector<int> levels; //!< For each variable the level it belongs to.
 
 		template<class T>
@@ -81,21 +86,46 @@ class Solver{
 			std::queue<T> empty;
 			std::swap(origin, empty);
 		};
+		
+		/**
+		 * Check if is possible to be SAT
+		 */
+		bool canBeSAT();
+
+		/**
+		 * Select new variable
+		 */
+		Literal select();
+
+		/**
+		 * Simplify the original set of variables
+		 */
+		void simplify(); //TODO
+
+		/**
+		 * Reduce the learnts clauses
+		 */
+		void reduceLearnts(); //TODO
 
 		/**
 		 * Return the current assignment for variable x
 		 */
-		lbool value(var x){return assignments[x];};
+		inline lbool value(var x){return assignments[x];};
 		/**
 		 * Return the sobstitution of assignment to literal l
 		 */
-		lbool value(Literal l){
+		inline lbool value(Literal l){
 			if(l.val()>0) return assignments[l.index()];
 			else{
 				if(assignments[l.index()]!=U) return (assignments[l.index()]==T)?F:T;
 				else return U;
 			}
 		};	
+
+		/**
+		 * Return the current decision level
+		 */
+		inline int decisionLevel(){return trail_lim.size();};
 		/**
 		 * Undo last propagation or decision in trail
 		 */
@@ -112,10 +142,6 @@ class Solver{
 		void cancel();
 
 		/**
-		 * Return the current decision level
-		 */
-		int decisionLevel(){return curr_level;};
-		/**
 		 * Propagate operation
 		 * This method support pragma openmp operation to parallelize into nThread the propagation for each clause. The number of thread depends on CPU cores.
 		 */
@@ -123,7 +149,12 @@ class Solver{
 		/**
 		 * Pick a variable
 		 */
-		bool assume();
+		bool assume(Literal& p);
+
+		/**
+		 * Return the number of assigned variable
+		 */
+		int nAssigns();
 
 		/**
 		 * Method used to analyze the conflict
@@ -142,7 +173,7 @@ class Solver{
 		/**
 		 * Enqueue method to check if exist a conflict and if not insert into propagation queue next propagate literal, agiving asignement etc..
 		 */
-		bool enqueue(Literal p, Clause* c);
+		bool enqueue(Literal p, Clause* c = nullptr);
 
 		/**
 		 * Method to decay all the activities
@@ -188,17 +219,18 @@ class Solver{
 	 * </ul>
 	 */
 	inline bool Clause::propagate(Solver *solver, Literal* p){
+#if ASSERT
 		assert(size()>0);
-		//TODO: ogni variabile ha due liste, quindi vai e modifica quelle!!
 		if(literals[0]!=~*p&&literals[1]!=~*p) return true;
 		assert(literals[0]==~*p||literals[1]==~*p);
 		assert(solver->value(~*p)==F);
-	
+#endif
 		if(literals[0]==~*p){
 			literals[0]=literals[1];literals[1]=~*p;
 		}
 		assert(literals[1]==~*p); //!< l2 = F
 		if(solver->value(literals[0])==T){
+			//Not necessary to search an other watched literal, waste of time
 	/*		for(int i=2;i<size();++i){
 				if(solver->value(literals[i])!=F){
 					Literal tmp=literals[1];
@@ -220,19 +252,6 @@ class Solver{
 		}
 		solver->watches[p->val()].push_back(this);
 		return solver->enqueue(literals[0], this);
-	};
-
-	inline Clause Clause::resolve(Clause c, Solver* solver){
-		std::set<Literal> resolv_set(begin(), end());
-		Clause resolv;
-		for(int i=0; i<c.size();++i) resolv_set.insert(c[i]);
-		for(std::set<Literal>::iterator it = resolv_set.begin(); it!=resolv_set.end();it++){
-			if(resolv_set.find(~(*it))==resolv_set.end()){
-				resolv.addLiteral(*it);
-				solver->activity[it->val()]+=BONUS;
-			}
-		}
-		return resolv;
 	};
 
 	inline void Clause::calcReason(Solver* solver, Literal& p, std::vector<Literal>& p_reason){

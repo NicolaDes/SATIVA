@@ -5,7 +5,9 @@
 #include <vector>
 #include <set>
 #include <iostream>
-#include <cassert>
+#if ASSERT
+	#include <cassert>
+#endif
 #include <stdarg.h>
 
 
@@ -16,8 +18,10 @@
 	private:
 		mvlogic x;
 	public:
+		//!< Constructors
 		lbool();
 		lbool(mvlogic x){this->x=x;};
+		//!< Operators
 		mvlogic operator !(){if(x==T) return F; else if(x==F) return T; else return U;};
 		bool operator ==(mvlogic logic){return (logic==x);};
 		bool operator !=(mvlogic logic){return (logic!=x);};
@@ -28,24 +32,29 @@
 	private:
 		var x;
 	public:
+		//!< Constructors
 		Literal(){};
 		Literal(var x){this->x=x;};
 
-		//!< self operators		
-		Literal operator ~(){Literal l(x*-1);return l;};
+		//!< Operators
 		Literal operator ~() const {Literal l(x*-1);return l;};
-
 		friend bool operator ==(const Literal& l1, const Literal &l2){return l1.x==l2.x;};
 		friend bool operator !=(const Literal& l1, const Literal &l2){return !(l1==l2);};
 
 		friend std::ostream & operator <<(std::ostream &os, const Literal &l){if(l.x>0)os<<"x_"<<l.x;else os<<"-x_"<<std::abs(l.x);return os;};
-		//!< Accessing operators
 		bool operator <(const Literal& l) const{return x<l.x;};
 
+		/**
+		 * Return true if is negate, false otherwise
+		 */
 		bool sign(){return (x>0)?false:true;};
-		int val(){return x;};
+		/**
+		 * Return the value of Literal
+		 */
 		int val() const {return x;};
-		int index(){return std::abs(x);};
+		/**
+		 * Return an indexable value for array of Literal
+		 */
 		int index() const {return std::abs(x);};
 	};	
 	typedef std::vector<Literal> LiteralList;
@@ -71,37 +80,41 @@
 	public:
 		Clause(){};
 
+		/**
+		 * Add a literal to the clause.
+		 */
 		void addLiteral(Literal l){
 			literals.push_back(l);
 		};
 		
-		//!< self operators
-		friend std::ostream & operator <<(std::ostream &os, const Clause &c){os<<("( ");for(auto x=c.literals.begin();x!=c.literals.end();){os<<*x;if(++x!=c.literals.end())os<<" v ";};os<<" )";return os;};
 
 		/**
-		 * Prototype function!!
+		 * @warning Prototype function
+		 * Propagate the clause.
 		 */
 		bool propagate(Solver *solver, Literal* p);
-		Clause resolve(Clause c, Solver* solver);
+		/**
+		 * Calculate the reason of the conflict clause
+		 * @warning Prototype function
+		 */
 		void calcReason(Solver* solver, Literal& p, std::vector<Literal>& p_reason);	
+		/**
+		 * Undo last assignment restoring original status of the clause
+		 * @warning Prototype function
+		 */
 		void undo(Solver* solver, Literal& p);
 
-		typedef LiteralList::iterator iterator;
-//		typedef LiteralList::const_iterator const_iterator;
-		iterator begin(){return literals.begin();};
-		bool atLeastOne(const Clause c){
-
-			for(int i=0;i<size();++i){
-				for(int j=0;j<c.size();++j){
-					if(literals[i]==c.literals[j]||literals[i]==~c.literals[j]) return true;
-				}
-			} 
-
-			return false;
-		};
-		iterator end(){return literals.end();};
+		/**
+		 * Return the object literal at position :x
+		 */
 		Literal& at(int x){return literals[x];};
+
+		//!< Operators
+		/**
+		 * Return the ogject literal at position :x
+		 */
 		Literal& operator [](int x){return literals[x];};
+		friend std::ostream & operator <<(std::ostream &os, const Clause &c){os<<("( ");for(auto x=c.literals.begin();x!=c.literals.end();){os<<*x;if(++x!=c.literals.end())os<<" v ";};os<<" )";return os;};
 		bool operator ==(Clause c){
 			if(c.size()!=size()) return false;
 			int found=0;
@@ -113,18 +126,6 @@
 			return (found==c.size())?true:false;
 		}
 		bool operator !=(Clause c){return !(*this==c);};
-		//TODO: da ottimizzare la ricerca e quindi la risoluzione.
-		Clause operator &(Clause c){
-			std::set<Literal> resolv_set(begin(), end());
-			Clause resolv;
-			for(int i=0; i<c.size();++i) resolv_set.insert(c[i]);
-			for(std::set<Literal>::iterator it = resolv_set.begin(); it!=resolv_set.end();it++){
-				if(resolv_set.find(~(*it))==resolv_set.end()){
-					resolv.addLiteral(*it);
-				}
-			}
-			return resolv;
-		};
 		int size() const {return literals.size();};
 			
 	};
