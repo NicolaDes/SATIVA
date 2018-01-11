@@ -33,13 +33,13 @@ namespace Dimacs{
 		int index=1;
 		int val;
 		int i=0;
-		std::vector<int> lits_val;
+		std::vector<Literal> lits_val;
 
 		while(true){
 			int ret=fscanf(fp, "%i", &val);
 			if(ret==EOF) break;
 			if(val!=0){
-				lits_val.push_back(val);
+				lits_val.push_back(Literal(val));
 			}else{
 				solver.newClause(lits_val, false);
 				index++;

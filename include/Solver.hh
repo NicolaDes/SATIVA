@@ -21,7 +21,7 @@ class Solver{
 		/**
 		 * Create a new clause in the heap of the program!
 		 */
-		void newClause(std::vector<int>& lits_val, bool learnt);
+		void newClause(std::vector<Literal>& lits_val, bool learnt);
 		/**
 		 * Check if SAT is SAT under this assignment
 		 */
@@ -59,12 +59,12 @@ class Solver{
 		//!< Default constraints
 		Clause* clauses; //!< List of clauses.
 		std::vector<Clause*> learnts; //!< List of learnt clauses.
-		std::vector<std::vector<Clause*> > undos;
 
 		//!< Propagation constraints
 		std::vector<Clause*>*  watches; //!< For each literal with a positive phase a list of clause to be watched if p changes value.
 		Clause* reason;
 		std::queue<Literal> propQ;
+		std::vector<Clause*>* undos;
 
 		//!< Assignment values
 		std::vector<lbool> assignments; //!< Assignment indexed by variable. Size of this is the number of vars.
@@ -95,7 +95,22 @@ class Solver{
 				if(assignments[l.index()]!=U) return (assignments[l.index()]==T)?F:T;
 				else return U;
 			}
-		};
+		};	
+		/**
+		 * Undo last propagation or decision in trail
+		 */
+		void undoOne();
+
+		/**
+		 * Bump activity
+		 */
+		void reward(Clause* c);
+
+		/**
+		 * Delete an entire level of decision with its propagations
+		 */
+		void cancel();
+
 		/**
 		 * Return the current decision level
 		 */
@@ -108,12 +123,12 @@ class Solver{
 		/**
 		 * Pick a variable
 		 */
-		void pickALiteral();
+		bool assume();
 
 		/**
 		 * Method used to analyze the conflict
 		 */
-		int analyze(Clause* conflict);
+		int analyze(Clause* conflict, std::vector<Literal>& to_learn);
 
 		/**
 		 * Method used to backtrack
@@ -153,7 +168,10 @@ class Solver{
 		 */
 		void firstUIP();
 
-		void undo(Literal l);
+		/**
+		 * Record a learnt clause
+		 */
+		void record(std::vector<Literal>& clause);
 };
 
 //functions prototypes
@@ -215,5 +233,20 @@ class Solver{
 			}
 		}
 		return resolv;
+	};
+
+	inline void Clause::calcReason(Solver* solver, Literal& p, std::vector<Literal>& p_reason){
+#if ASSERT
+		assert(solver->value(p)==U||literals[0]==p);
+#endif
+		for(int i=((solver->value(p)==U)?0:1);i<size();++i) p_reason.push_back(~literals[i]);		
+	};
+
+	inline void Clause::undo(Solver* solver, Literal& p){
+#if VERBOSE
+		std::cout<<"Undoing clause: "<<*this<<" about literal "<<p;
+		std::cout<<"\tPushing in "<<-p.val()<<" "<<*this<<"\n";
+#endif
+		solver->watches[-p.val()].push_back(this);
 	};
 #endif

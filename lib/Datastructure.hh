@@ -83,6 +83,8 @@
 		 */
 		bool propagate(Solver *solver, Literal* p);
 		Clause resolve(Clause c, Solver* solver);
+		void calcReason(Solver* solver, Literal& p, std::vector<Literal>& p_reason);	
+		void undo(Solver* solver, Literal& p);
 
 		typedef LiteralList::iterator iterator;
 //		typedef LiteralList::const_iterator const_iterator;
