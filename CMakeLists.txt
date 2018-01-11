@@ -70,9 +70,15 @@ include_directories ("lib/")
 include_directories(include)
 add_subdirectory (src)
 
-add_executable (CDCL_test test/CDCL.cpp)
+if(CDCL)
+	add_executable (CDCL_test test/CDCL.cc)
+	target_link_libraries(CDCL_test SOLVER)
+endif()
 
-target_link_libraries(CDCL_test SOLVER)
+if(CLI)
+	add_executable(CLI_test test/CLI.cc)
+	target_link_libraries(CLI_test SOLVER)
+endif()
 
 file (COPY "inputs" DESTINATION ".")
 

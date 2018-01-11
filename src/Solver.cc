@@ -217,6 +217,7 @@ Literal Solver::select(){
 	int max_so_far=-1;
 	var x = 0;
 	for(int i=-nLiterals;i<nLiterals+1;++i){
+		if(i==0) continue;
 		if(max_so_far<activity[i]&&assignments[i]==U){
 			x=i;
 			max_so_far=activity[i];

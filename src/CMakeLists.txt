@@ -1,1 +1,1 @@
-add_library (SOLVER "Solver.cpp")
+add_library (SOLVER "Solver.cc")
