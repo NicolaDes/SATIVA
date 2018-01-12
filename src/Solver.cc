@@ -37,7 +37,9 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 			learnts[learnt_size]->addLiteral(x);
 			activity[x.val()]++;
 		}
+#if VERBOSE
 		std::cout<<*learnts.back()<<" )\n";
+#endif
 		reward(learnts.back());
 		return;
 	}else{
@@ -48,7 +50,7 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 
 		if(size==1){
 #if VERBOSE
-			std::cout<<"Unit clause will not be added, only propagated!\n";
+			std::cout<<"Unit clause will not be added, only propagated ( "<<lits_val[0]<<" )!\n";
 #endif
 #if ASSERT
 			assert(value(lits_val[0])==U);
@@ -113,17 +115,20 @@ Clause* Solver::propagate(){
 bool Solver::enqueue(Literal p, Clause* c){ 
 	if(value(p)!=U){ 
 		if(value(p)==F){
+			nConflicts++;
 #if VERBOSE
 			std::cout<<"Trovato un conflitto generato da: "<<*c<<"\n";
 #endif
 			return false;
 		}else{
 #if VERBOSE
-			std::cout<<"Existing consistent assignment, don't enqueue\n"<<"\t lit: "<<p<<", clause: "<<*c<<"\n";
+			if(c!=nullptr)
+				std::cout<<"Existing consistent assignment, don't enqueue\n"<<"\t lit: "<<p<<", clause: "<<*c<<"\n";
 #endif
 			return true;
 		}
 	}else{
+		nPropagations++;
 #if VERBOSE
 		if(c!=nullptr)
 			std::cout<<"Prop( "<<p<<" ) <- "<<*c<<"\n";
@@ -150,7 +155,11 @@ int Solver::analyze(Clause* conflict, std::vector<Literal>& to_learn){
 	assert(decisionLevel()>0);
 #endif
 #if VERBOSE
-	std::cout<<"Starting to analyze conflict "<<*conflict<<"...\n";
+	int res_lev=0;
+	std::vector<Clause> resolution;
+	resolution.push_back(*conflict);
+//	std::cout<<"Starting to analyze conflict "<<*conflict<<"...\n";
+//	std::cout<<"|"<<*conflict<<"\n";
 #endif
 	std::vector<Literal> p_reason;
 	Literal p(0);
@@ -181,11 +190,26 @@ int Solver::analyze(Clause* conflict, std::vector<Literal>& to_learn){
 #endif
 			p = trail.back();
 			c = reason[p.val()];
+#if VERBOSE
+			if(c.size()==0) goto end;
+			resolution.push_back(c);
+			resolution.push_back(resolution[resolution.size()-2]&c);
+end:
+//			std::cout<<"|";
+//			for(int i=res_lev;i>0;--i)std::cout<<"----";
+//			std::cout<<c<<"\n";
+#endif
 			undoOne();
 		}while(!seen[p.index()]);
 		counter--;
+#if VERBOSE
+		if(counter>0) res_lev++;
+#endif
 	}while(counter>0);
 	to_learn[0]=~p;
+#if VERBOSE
+	resolvents.push_back(resolution);
+#endif	
 	return btLevel;
 };
 
@@ -234,7 +258,7 @@ bool Solver::CDCL(){
 		Clause* conflict=propagate();
 		if(conflict!=nullptr){ //!< Exist a conflict
 			std::vector<Literal> to_learn;int btLevel;
-			if(decisionLevel()==root_level) return false;
+			if(decisionLevel()==root_level){ analyze(conflict, to_learn);return false;}
 			btLevel=analyze(conflict, to_learn);
 			backtrack(btLevel);
 			record(to_learn);
@@ -250,6 +274,7 @@ bool Solver::CDCL(){
 			else{
 				Literal p = select();
 				assume(p);
+				nDecisions++;
 			}
 		}
 	};
@@ -308,7 +333,9 @@ bool Solver::isSAT(){
 			sat=sat||(value(clauses[i].at(j))==T?true:false);
 		}
 		if(!sat){
+#if VERBOSE
 			std::cout<<"Clause "<<i<<" is not satisfied!\n";       
+#endif
 			return false;
 		}
 	}

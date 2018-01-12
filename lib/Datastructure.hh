@@ -126,6 +126,15 @@
 			return (found==c.size())?true:false;
 		}
 		bool operator !=(Clause c){return !(*this==c);};
+		inline Clause operator &(Clause c){
+			std::set<Literal> resolv_set(literals.begin(), literals.end());
+			Clause resolv;
+			for(int i=0;i<c.size();++i)resolv_set.insert(c[i]);
+			for(auto it = resolv_set.begin();it!=resolv_set.end();++it){
+				if(resolv_set.find(~(*it))==resolv_set.end()) resolv.addLiteral(*it);
+			}
+			return resolv;
+		};
 		int size() const {return literals.size();};
 			
 	};

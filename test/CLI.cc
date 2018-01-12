@@ -17,6 +17,10 @@ int main(int argc, char** argv){
 	if(argc>1) Dimacs::fillFromFile(argv[1], solver);
 
 	tabular::printInit(&solver);
+	tabular::printLaunch(&solver);
+	bool res = solver.CDCL();
+	if(res) tabular::printModel(&solver);
+	else tabular::printProve(&solver);
 
 
 	return 0;

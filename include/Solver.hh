@@ -37,6 +37,23 @@ class Solver{
 		 */
 		std::vector<lbool> getModel(){return assignments;};
 
+		/**
+		 * Return the prove of unsat
+		 */
+		inline std::vector<std::vector<Clause> >& getProve(){return resolvents;};
+
+		/**
+		 * Return the number of conflicts
+		 */
+		inline int nConflict(){return nConflicts;};
+		/**
+		 * Return the number of decisions
+		 */
+		inline int nDecision(){return nDecisions;};
+		/**
+		 * Return the number of propagations
+		 */
+		inline int nPropagation(){return nPropagations;};
 
 		/**
 		 * Return the number of clauses
@@ -55,7 +72,12 @@ class Solver{
 		//!< Constants values
 		const int root_level=0;
 		int max_conflict;
+		int nConflicts=0;
+		int nPropagations=0;
+		int nDecisions=0;
 
+		//!< Structure to get the counterexample
+		std::vector<std::vector<Clause> > resolvents;
 
 		bool initialized=false;
 		int nClauses;
@@ -264,10 +286,6 @@ class Solver{
 	};
 
 	inline void Clause::undo(Solver* solver, Literal& p){
-#if VERBOSE
-		std::cout<<"Undoing clause: "<<*this<<" about literal "<<p;
-		std::cout<<"\tPushing in "<<-p.val()<<" "<<*this<<"\n";
-#endif
 		solver->watches[-p.val()].push_back(this);
 	};
 #endif
