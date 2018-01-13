@@ -32,13 +32,9 @@ else()
 endif()
 
 
-if(GNUPLOT)
+if(GRAPH)
 	message (Inserted binary location for graphics: ${GNUPLOT})
 	file (COPY "graphics" DESTINATION ".")
-	set(GRAPHICS_VAL 1)
-	add_custom_target (plot
-		${GNUPLOT} -p graphics/script.plt
-		)
 endif()
 
 configure_file (

@@ -22,7 +22,7 @@ class Solver{
 		/**
 		 * Create a new clause in the heap of the program!
 		 */
-		void newClause(std::vector<Literal>& lits_val, bool learnt);
+		void newClause(std::vector<Literal>& lits_val, bool learnt=false);
 		/**
 		 * Check if SAT is SAT under this assignment
 		 */
@@ -67,11 +67,17 @@ class Solver{
 		 * Return the number of learnts clauses
 		 */
 		int nLearnts(){return learnts.size();};
+		/**
+		 * Return the number of restarts
+		 */
+		int nRestart(){return nRestarts;};
 		
 	private:
 		//!< Constants values
 		const int root_level=0;
-		int max_conflict;
+		int max_conflict=100000;
+
+		int nRestarts=0;
 		int nConflicts=0;
 		int nPropagations=0;
 		int nDecisions=0;
@@ -87,7 +93,7 @@ class Solver{
 		std::vector<Clause*> learnts; //!< List of learnt clauses.
 
 		//!< Propagation constraints
-		std::vector<Clause*>*  watches; //!< For each literal with a positive phase a list of clause to be watched if p changes value.
+		std::set<Clause*>*  watches; //!< For each literal with a positive phase a list of clause to be watched if p changes value.
 		Clause* reason;
 		std::queue<Literal> propQ;
 		std::vector<Clause*>* undos;
@@ -106,6 +112,11 @@ class Solver{
 		template<class T>
 		inline void clear(std::queue<T>& origin){
 			std::queue<T> empty;
+			std::swap(origin, empty);
+		};
+		template<class T>
+		inline void clear(std::set<T>& origin){
+			std::set<T> empty;
 			std::swap(origin, empty);
 		};
 		
@@ -241,7 +252,7 @@ class Solver{
 	 * </ul>
 	 */
 	inline bool Clause::propagate(Solver *solver, Literal* p){
-		if(literals[0]!=~*p&&literals[1]!=~*p) return true;
+//		if(literals[0]!=~*p&&literals[1]!=~*p) return true;
 #if ASSERT
 		assert(size()>0);
 		assert(literals[0]==~*p||literals[1]==~*p);
@@ -264,17 +275,17 @@ class Solver{
 					break;
 				}
 			}*/
-			solver->watches[p->val()].push_back(this);
+			solver->watches[p->val()].insert(this);
 			return true;
 		}
 		for(int i=2; i<size();++i){
 			if(solver->value(literals[i])!=F){
 				literals[1]=literals[i];literals[i]=~*p;
-				solver->watches[-literals[1].val()].push_back(this);
+				solver->watches[-literals[1].val()].insert(this);
 				return true;
 			}
 		}
-		solver->watches[p->val()].push_back(this);
+		solver->watches[p->val()].insert(this);
 		return solver->enqueue(literals[0], this);
 	};
 
@@ -286,6 +297,11 @@ class Solver{
 	};
 
 	inline void Clause::undo(Solver* solver, Literal& p){
-		solver->watches[-p.val()].push_back(this);
+		solver->watches[-p.val()].insert(this);
+	};
+
+	inline void Clause::simplify(Literal& l){
+		auto it=literals.begin();while(*it!=l)++it;
+		literals.erase(it);
 	};
 #endif

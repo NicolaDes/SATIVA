@@ -71,9 +71,16 @@ namespace tabular{
 		cout<<"|        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" s\t\t\t|\n";
 		cout<<"|        Learnt clauses: "<<solver->nLearnts()<<"\t\t\t|\n";
 		cout<<"|        Conflict clauses: "<<solver->nConflict()<<"\t\t\t|\n";
+		cout<<"|        #Restarts: "<<solver->nRestart()<<"\t\t\t|\n";
 		cout<<"|        Decisions: "<<solver->nDecision()<<"\t\t\t\t|\n";
 		cout<<"|        Propagations: "<<solver->nPropagation()<<"\t\t\t|\n";
 
+	};
+	//TODO: temporaneo, per il gdb
+	void printLearnt(std::vector<Clause*>& v){
+		for(int i=0; i<v.size();++i){
+			std::cout<<*v[i]<<"\n";
+		}
 	};
 	void printProve(Solver* solver){
 		getrusage(RUSAGE_SELF, &rus);
@@ -99,6 +106,7 @@ namespace tabular{
 		cout<<"|        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" s\t\t\t|\n";
 		cout<<"|        Learnt clauses: "<<solver->nLearnts()<<"\t\t\t|\n";
 		cout<<"|        Conflict clauses: "<<solver->nConflict()<<"\t\t\t|\n";
+		cout<<"|        #Restarts: "<<solver->nRestart()<<"\t\t\t|\n";
 		cout<<"|        Decisions: "<<solver->nDecision()<<"\t\t\t\t|\n";
 		cout<<"|        Propagations: "<<solver->nPropagation()<<"\t\t\t|\n";
 	};

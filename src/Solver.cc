@@ -1,11 +1,11 @@
 #include "Solver.hh"
 
 void Solver::init(int nL, int nC){
-	watches= new std::vector<Clause*>[(2*nL)+1];
+	watches= new std::set<Clause*>[(2*nL)+1];
 	watches=watches+nL;
 	reason= new Clause[(2*nL)+1];
 	reason=reason+nL;
-	assignments.resize(nL+1, lbool(U));
+	assignments.resize(nL+1);
 	levels.resize(nL+1, 0);
 	undos = new std::vector<Clause*>[(2*nL)+1];
 	undos = undos + nL;
@@ -57,8 +57,8 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 #endif
 			enqueue(lits_val[0]);
 		}else{
-			watches[-clauses->at(0).val()].push_back(clauses);
-			watches[-clauses->at(1).val()].push_back(clauses);
+			watches[-clauses->at(0).val()].insert(clauses);
+			watches[-clauses->at(1).val()].insert(clauses);
 #if VERBOSE
 			std::cout<<*clauses<<" )\n";
 #endif	
@@ -92,18 +92,26 @@ Clause* Solver::propagate(){
 		bool not_conflict=true;
 		int p_index=p.val();
 		int size=watches[p_index].size();
-		std::vector<Clause*> tmp=watches[p_index];
+		std::set<Clause*> tmp=watches[p_index];
+//		std::vector<Clause*> tmp;
+/*		for(int i=0; i<size;++i){
+			bool found=false;
+			for(int j=0; j<tmp.size();++j){
+				if(*tmp[j]==*watches[p_index][i]) found=true;
+			}
+			if(!found) tmp.push_back(watches[p_index][i]);
+		}*/
 		clear(watches[p_index]);
-		
-		for(int i=0; i<size;++i){
-			not_conflict=tmp[i]->propagate(this, &p);
+		for(auto x = tmp.begin();x!=tmp.end();++x){
+			not_conflict=(*x)->propagate(this, &p);
 			if(!not_conflict){
-				int j=i;
 				//clear propQ
 				clear(propQ);
 				//copy remaining watched literals
-				for(i;i<size;++i) watches[p_index].push_back(tmp[i]);
-				return tmp[j];
+				auto i = x;
+				x++;
+				for(;x!=tmp.end();++x) watches[p_index].insert(*x);
+				return *i;
 			}
 		}
 	}       
@@ -142,7 +150,7 @@ bool Solver::enqueue(Literal p, Clause* c){
 #endif
 		if(c!=nullptr){
 			reason[p.val()]=*c;
-			undos[p.val()].push_back(c);
+//			undos[p.val()].push_back(c);
 		}
 		trail.push_back(p);
 		propQ.push(p);
@@ -151,10 +159,7 @@ bool Solver::enqueue(Literal p, Clause* c){
 };
 
 int Solver::analyze(Clause* conflict, std::vector<Literal>& to_learn){
-#if ASSERT
-	assert(decisionLevel()>0);
-#endif
-#if VERBOSE
+#if PROVE
 	int res_lev=0;
 	std::vector<Clause> resolution;
 	resolution.push_back(*conflict);
@@ -190,7 +195,7 @@ int Solver::analyze(Clause* conflict, std::vector<Literal>& to_learn){
 #endif
 			p = trail.back();
 			c = reason[p.val()];
-#if VERBOSE
+#if PROVE
 			if(c.size()==0) goto end;
 			resolution.push_back(c);
 			resolution.push_back(resolution[resolution.size()-2]&c);
@@ -207,7 +212,7 @@ end:
 #endif
 	}while(counter>0);
 	to_learn[0]=~p;
-#if VERBOSE
+#if PROVE
 	resolvents.push_back(resolution);
 #endif	
 	return btLevel;
@@ -257,8 +262,10 @@ bool Solver::CDCL(){
 	while(true){
 		Clause* conflict=propagate();
 		if(conflict!=nullptr){ //!< Exist a conflict
+			nConflict++;
 			std::vector<Literal> to_learn;int btLevel;
-			if(decisionLevel()==root_level){ analyze(conflict, to_learn);return false;}
+			if(decisionLevel()==root_level){ 
+				analyze(conflict, to_learn);return false;}
 			btLevel=analyze(conflict, to_learn);
 			backtrack(btLevel);
 			record(to_learn);
@@ -267,10 +274,15 @@ bool Solver::CDCL(){
 #if ASSERT
 			assert(canBeSAT());
 #endif
-			if(decisionLevel()==0) simplify();
+//			if(decisionLevel()==0) simplify();
 			if(learnts.size()-nAssigns()>=learnts.size()) reduceLearnts();
 			if(nAssigns()==nLiterals) return true;
-			else if(nClauses==max_conflict) backtrack(root_level);
+			else if(false){//nConflict>max_conflict) {
+				std::cout<<"Restarting module...\n";
+				max_conflict+=max_conflict;
+				nRestarts++;
+				backtrack(root_level);
+			}
 			else{
 				Literal p = select();
 				assume(p);
@@ -285,7 +297,45 @@ void Solver::backtrack(int btLevel){
 	while(decisionLevel()>btLevel) cancel();
 };
 
-void Solver::simplify(){};
+void Solver::simplify(){
+	std::vector<Clause> final_cs;
+
+	for(int i=-nClauses;i<0;++i){
+		for(int j=0; j<clauses[i].size();++j){
+
+			if(value(clauses[i].at(j))==T){ std::cout<<"\tThe clause "<<clauses[i]<<" can be deleted 'cause already satisfied.\n";break;}
+			else if(value(clauses[i].at(j))==F){
+			     	std::cout<<"\tIn clause "<<clauses[i]<<" literal "<<clauses[i].at(j)<<" can be deleted: ";
+				clauses[i].simplify(clauses[i].at(j));
+				final_cs.push_back(clauses[i]);
+				std::cout<<clauses[i]<<"\n";
+				break;
+			}else if(value(clauses[i].at(j))==U){
+			       	final_cs.push_back(clauses[i]);
+				break;
+			}
+		}
+	}
+
+
+	for(auto c : final_cs) std::cout<<c<<" ";
+	std::cout<<"\n";
+#if ASSERT
+	assert(final_cs.size()<=nClauses);
+#endif
+	std::cout<<"Clauses was reduced from "<<nClauses<<" to "<<final_cs.size()<<"\n";
+	if(final_cs.size()==nClauses)goto end;
+process:
+	clauses=clauses-nClauses;delete[] clauses;
+	clauses=new Clause[final_cs.size()];
+	for(auto x : final_cs){
+		*clauses=x;
+		clauses=clauses+1;
+	}
+	nClauses=final_cs.size();
+end:
+	return;
+};
 
 void Solver::reduceLearnts(){};
 

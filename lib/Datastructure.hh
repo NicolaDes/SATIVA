@@ -19,7 +19,7 @@
 		mvlogic x;
 	public:
 		//!< Constructors
-		lbool();
+		lbool(){x=U;};
 		lbool(mvlogic x){this->x=x;};
 		//!< Operators
 		mvlogic operator !(){if(x==T) return F; else if(x==F) return T; else return U;};
@@ -103,13 +103,30 @@
 		 * @warning Prototype function
 		 */
 		void undo(Solver* solver, Literal& p);
-
+		/**
+		 * Simplify on current assignment
+		 */
+		void simplify(Literal& l);
 		/**
 		 * Return the object literal at position :x
 		 */
 		Literal& at(int x){return literals[x];};
 
 		//!< Operators
+
+		/**
+		 * Operator order for clause. Ci < Cj if Ci is included in Cj
+		 */
+		friend bool operator <(const Clause& c1, const Clause& c2) {
+			for(int i=0; i<c1.size();++i){
+				bool found=false;
+				for(int j=0; j<c2.size();++j){
+					if(c1.literals[i]==c2.literals[j]){found=true;break;}
+				}
+				if(!found)return false;
+			}
+			return true;
+		};
 		/**
 		 * Return the ogject literal at position :x
 		 */
