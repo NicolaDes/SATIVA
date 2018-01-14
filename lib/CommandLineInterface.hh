@@ -8,6 +8,7 @@
 #include <vector>
 #include <ctime>
 #include<sys/resource.h>
+#include <fstream>
 
 namespace tabular{
 	using namespace std;
@@ -109,6 +110,37 @@ namespace tabular{
 		cout<<"|        #Restarts: "<<solver->nRestart()<<"\t\t\t|\n";
 		cout<<"|        Decisions: "<<solver->nDecision()<<"\t\t\t\t|\n";
 		cout<<"|        Propagations: "<<solver->nPropagation()<<"\t\t\t|\n";
+	};
+
+	void generateGV(Solver* solver){
+		clk=clock()-clk;
+		double mem_used=system_util::memUsedPeak();
+		std::vector<lbool> model=solver->getModel();
+		cout<<"|                     UNSAT                     |\n";
+		cout<<"|-----------------------------------------------|\n";
+		cout<<"|------------< Generating prove... >------------|\n";
+		ofstream fout;fout.open("graphics/prove.gv");
+		fout<<"digraph G {\n";
+		std::vector<std::vector<Clause> >prove = solver->getProve();
+		for(int i=0; i<prove.size();++i){
+			int level=0;
+			for(int j=0;j<prove[i].size()-2;++j){
+				fout<<"\""<<prove[i][j]<<"\" -> \""<<prove[i][j+2]<<"\";\n\""<<prove[i][j+1]<<"\" -> \""<<prove[i][j+2]<<"\";\n";
+				j+=1;
+			}
+		}
+		fout<<"}\n";
+		fout.close();
+		cout<<"|-----------------------------------------------|\n";
+		cout<<"|        Memory usage: ";
+		cout<<system_util::memUsedPeak()<<" MB\t\t\t|\n";
+		cout<<"|        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" s\t\t\t|\n";
+		cout<<"|        Learnt clauses: "<<solver->nLearnts()<<"\t\t\t|\n";
+		cout<<"|        Conflict clauses: "<<solver->nConflict()<<"\t\t\t|\n";
+		cout<<"|        #Restarts: "<<solver->nRestart()<<"\t\t\t|\n";
+		cout<<"|        Decisions: "<<solver->nDecision()<<"\t\t\t\t|\n";
+		cout<<"|        Propagations: "<<solver->nPropagation()<<"\t\t\t|\n";
+
 	};
 
 	void printEnd(){

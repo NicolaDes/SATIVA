@@ -5,4 +5,4 @@
 #define VERBOSE @VERBOSE_ON@
 #define BONUS @BONUS_VAL@
 #define ASSERT @VERIFICA_ON@
-#define PROVE 1
+#define PROVE 0

@@ -40,12 +40,12 @@ namespace Dimacs{
 			if(ret==EOF) break;
 			if(val!=0){
 				lits_val.push_back(Literal(val));
-			}else{
+			}else if(lits_val.size()>0){
 				solver.newClause(lits_val, false);
 				index++;
 				i++;
 				lits_val.clear();
-			}
+			}else break;
 		}
 		fclose(fp);
 	};

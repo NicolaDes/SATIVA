@@ -20,7 +20,9 @@ int main(int argc, char** argv){
 	tabular::printLaunch(&solver);
 	bool res = solver.CDCL();
 	if(res) tabular::printModel(&solver);
-	else tabular::printProve(&solver);
+	else{
+		tabular::generateGV(&solver);
+	}
 
 
 	return 0;

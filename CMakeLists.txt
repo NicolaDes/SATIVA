@@ -35,6 +35,9 @@ endif()
 if(GRAPH)
 	message (Inserted binary location for graphics: ${GNUPLOT})
 	file (COPY "graphics" DESTINATION ".")
+	add_custom_target(graphviz
+		dot -Tps graphics/prove.gv -o graphics/prove.ps
+		)
 endif()
 
 configure_file (
