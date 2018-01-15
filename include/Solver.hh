@@ -192,7 +192,7 @@ class Solver{
 		/**
 		 * Method used to analyze the conflict
 		 */
-		int analyze(Clause* conflict, std::vector<Literal>& to_learn);
+		int analyze(Clause* conflict, std::vector<Literal>& to_learn, bool unsat=false);
 
 		/**
 		 * Method used to backtrack
@@ -253,17 +253,15 @@ class Solver{
 	 */
 	inline bool Clause::propagate(Solver *solver, Literal* p){
 //		if(literals[0]!=~*p&&literals[1]!=~*p) return true;
-#if ASSERT
 		assert(size()>0);
 		assert(literals[0]==~*p||literals[1]==~*p);
 		assert(solver->value(~*p)==F);
-#endif
+		
 		if(literals[0]==~*p){
 			literals[0]=literals[1];literals[1]=~*p;
 		}
-#if ASSERT
 		assert(literals[1]==~*p); //!< l2 = F
-#endif
+		
 		if(solver->value(literals[0])==T){
 			//Not necessary to search an other watched literal, waste of time
 	/*		for(int i=2;i<size();++i){
@@ -290,9 +288,7 @@ class Solver{
 	};
 
 	inline void Clause::calcReason(Solver* solver, Literal& p, std::vector<Literal>& p_reason){
-#if ASSERT
 		assert(solver->value(p)==U||literals[0]==p);
-#endif
 		for(int i=((solver->value(p)==U)?0:1);i<size();++i) p_reason.push_back(~literals[i]);		
 	};
 

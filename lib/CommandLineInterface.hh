@@ -90,6 +90,7 @@ namespace tabular{
 		std::vector<lbool> model=solver->getModel();
 		cout<<"|                     UNSAT                     |\n";
 		cout<<"|-----------------------------------------------|\n";
+#if PROVE
 		cout<<"|-------------------< PROVE >-------------------|\n";
 		std::vector<std::vector<Clause> > prove = solver->getProve();
 		for(int i = 0; i<prove.size();++i){
@@ -101,6 +102,7 @@ namespace tabular{
 				level++;
 			}
 		}
+#endif
 		cout<<"|-----------------------------------------------|\n";
 		cout<<"|        Memory usage: ";
 		cout<<system_util::memUsedPeak()<<" MB\t\t\t|\n";
@@ -118,6 +120,7 @@ namespace tabular{
 		std::vector<lbool> model=solver->getModel();
 		cout<<"|                     UNSAT                     |\n";
 		cout<<"|-----------------------------------------------|\n";
+#if PROVE
 		cout<<"|------------< Generating prove... >------------|\n";
 		ofstream fout;fout.open("graphics/prove.gv");
 		fout<<"digraph G {\n";
@@ -131,6 +134,7 @@ namespace tabular{
 		}
 		fout<<"}\n";
 		fout.close();
+#endif
 		cout<<"|-----------------------------------------------|\n";
 		cout<<"|        Memory usage: ";
 		cout<<system_util::memUsedPeak()<<" MB\t\t\t|\n";
