@@ -28,5 +28,10 @@ if(CLI)
 	target_link_libraries(CLI_test SOLVER)
 endif()
 
+if(PIG)
+	add_executable(PIG_test test/PIG.cc)
+	target_link_libraries(PIG_test SOLVER)
+endif()
+
 file (COPY "inputs" DESTINATION ".")
 
