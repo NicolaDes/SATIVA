@@ -19,10 +19,12 @@ namespace tabular{
 		cout<<"\n\n";
 		int i=0;
 		cout<<"|";
-		for(;i<15;++i) cout<<"=";
-		cout<<"< SAT-IVA STATS >";
+		for(;i<13;++i) cout<<"=";
+		cout<<"< SAT-IVA STATS ";
+		printf("%.1f", VERSION);
+		cout<<" >";
 		i=0;
-		for(;i<15;++i) cout<<"=";
+		for(;i<13;++i) cout<<"=";
 		cout<<"|\n";
 		i=0;
 		cout<<"|";
@@ -71,7 +73,6 @@ namespace tabular{
 		cout<<system_util::memUsedPeak()<<" MB\t\t\t|\n";
 		cout<<"|        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" s\t\t\t|\n";
 		cout<<"|        Learnt clauses: "<<solver->nLearnts()<<"\t\t\t|\n";
-		cout<<"|        Conflict clauses: "<<solver->nConflict()<<"\t\t\t|\n";
 		cout<<"|        #Restarts: "<<solver->nRestart()<<"\t\t\t|\n";
 		cout<<"|        Decisions: "<<solver->nDecision()<<"\t\t\t\t|\n";
 		cout<<"|        Propagations: "<<solver->nPropagation()<<"\t\t\t|\n";
@@ -108,7 +109,6 @@ namespace tabular{
 		cout<<system_util::memUsedPeak()<<" MB\t\t\t|\n";
 		cout<<"|        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" s\t\t\t|\n";
 		cout<<"|        Learnt clauses: "<<solver->nLearnts()<<"\t\t\t|\n";
-		cout<<"|        Conflict clauses: "<<solver->nConflict()<<"\t\t\t|\n";
 		cout<<"|        #Restarts: "<<solver->nRestart()<<"\t\t\t|\n";
 		cout<<"|        Decisions: "<<solver->nDecision()<<"\t\t\t\t|\n";
 		cout<<"|        Propagations: "<<solver->nPropagation()<<"\t\t\t|\n";
@@ -126,10 +126,13 @@ namespace tabular{
 		fout<<"digraph G {\n";
 		std::vector<std::vector<Clause> >prove = solver->getProve();
 		for(int i=0; i<prove.size();++i){
-			int level=0;
 			for(int j=0;j<prove[i].size()-2;++j){
+				if(prove[i].size()<2){
+					fout<<"\""<<prove[i][j]<<"\";\n";
+					break;
+				}
 				fout<<"\""<<prove[i][j]<<"\" -> \""<<prove[i][j+2]<<"\";\n\""<<prove[i][j+1]<<"\" -> \""<<prove[i][j+2]<<"\";\n";
-				j+=1;
+				j++;
 			}
 		}
 		fout<<"}\n";

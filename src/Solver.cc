@@ -1,15 +1,14 @@
 #include "Solver.hh"
 
 void Solver::init(int nL, int nC){
-	watches= new std::set<Clause*>[(2*nL)+1];
+	watches= new std::vector<Watcher>[(2*nL)+1];
 	watches=watches+nL;
 	reason= new Clause[(2*nL)+1];
 	reason=reason+nL;
-	assignments.resize(nL+1);
+	assignments.resize(nL+1, lbool(U));
 	levels.resize(nL+1, 0);
 	undos = new std::vector<Clause*>[(2*nL)+1];
 	undos = undos + nL;
-	clauses=new Clause[nC];
 	nLiterals=nL;nClauses=nC;
 	activity = new float[(2*nL)+1];	
 	for(int i=0; i<nL;++i){
@@ -27,40 +26,58 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 	if(!initialized){std::cerr<<"Solver not initialized!!\n\tSystem aborting...\n";exit(1);}
 	int size=lits_val.size();
 	assert(size>0);
+
+	
 	if(learnt){
+#if ASSERT
+		assert(value(lits_val[0])==U);
+		for(int i=1;i<lits_val.size();++i){
+			assert(value(lits_val[i])==F);
+		}
+#endif
 		int learnt_size=learnts.size();
 		learnts.push_back(new Clause);
 		for(auto x : lits_val){
-			learnts[learnt_size]->addLiteral(x);
-			activity[x.val()]++;
-		}
-		reward(learnts.back());
-		return;
-	}else{
-		for(auto x : lits_val){
-			clauses->addLiteral(x);
+			learnts.back()->addLiteral(x);
 			activity[x.val()]++;
 		}
 
 		if(size==1){
-			assert(value(lits_val[0])==U);
-			enqueue(lits_val[0]);
-		}else{
-			watches[-clauses->at(0).val()].insert(clauses);
-			watches[-clauses->at(1).val()].insert(clauses);
+		enqueue(lits_val[0]);
+		return;
 		}
+		reward(learnts.back());
+		assert(learnts.back()->at(0)!=learnts.back()->at(1));
+		attachWatcher(learnts.back());
+	}else{
 
-		clauses=clauses+1;
+		clauses.push_back(new Clause);
+		for(auto x : lits_val){
+			clauses.back()->addLiteral(x);
+			activity[x.val()]++;
+		}
+		if(size==1){
+			enqueue(lits_val[0]);
+			return;
+		}
+		attachWatcher(clauses.back());
 	}	
 }
+
+void Solver::attachWatcher(Clause* clause){
+	watches[-clause->at(0).val()].push_back(Watcher(clause, clause->at(0)));
+	watches[-clause->at(1).val()].push_back(Watcher(clause, clause->at(1)));
+#if ASSERT
+assertWatches(-clause->at(0).val());
+assertWatches(-clause->at(1).val());
+#endif
+};
 
 Solver::Solver(){};
 
 Solver::~Solver(){
 	watches=watches-nLiterals;
 	delete [] watches;
-	clauses=clauses-nClauses;
-	delete [] clauses;
 	reason=reason-nLiterals;
 	delete [] reason;
 	undos=undos -nLiterals;
@@ -68,6 +85,7 @@ Solver::~Solver(){
 	activity=activity-nLiterals;
 	delete [] activity;
 	for(int i=0; i<learnts.size();i++) delete learnts[i];
+	for(int i=0; i<clauses.size();i++) delete clauses[i];
 };
 
 Clause* Solver::propagate(){
@@ -78,26 +96,20 @@ Clause* Solver::propagate(){
 		bool not_conflict=true;
 		int p_index=p.val();
 		int size=watches[p_index].size();
-		std::set<Clause*> tmp=watches[p_index];
-//		std::vector<Clause*> tmp;
-/*		for(int i=0; i<size;++i){
-			bool found=false;
-			for(int j=0; j<tmp.size();++j){
-				if(*tmp[j]==*watches[p_index][i]) found=true;
-			}
-			if(!found) tmp.push_back(watches[p_index][i]);
-		}*/
+		std::vector<Watcher> tmp=watches[p_index];
 		clear(watches[p_index]);
 		for(auto x = tmp.begin();x!=tmp.end();++x){
-			not_conflict=(*x)->propagate(this, &p);
+			not_conflict=x->propagate(this, &p);
 			if(!not_conflict){
 				//clear propQ
 				clear(propQ);
 				//copy remaining watched literals
 				auto i = x;
 				x++;
-				for(;x!=tmp.end();++x) watches[p_index].insert(*x);
-				return *i;
+				for(;x!=tmp.end();++x){
+				       	watches[p_index].push_back(*x);
+				}
+				return i->cref;
 			}
 		}
 	}       
@@ -123,7 +135,6 @@ bool Solver::enqueue(Literal p, Clause* c){
 			assert(c->size()>0);
 		if(c!=nullptr){
 			reason[p.val()]=*c;
-//			undos[p.val()].push_back(c);
 		}
 		trail.push_back(p);
 		propQ.push(p);
@@ -177,6 +188,17 @@ end:
 #if PROVE
 	resolvents.push_back(resolution);
 #endif	
+	if(to_learn.size()==1) btLevel=0;
+	else{
+		int max_i=1;
+		for(int i=2;i<to_learn.size();i++){
+			if(levels[to_learn[i].index()]>levels[to_learn[max_i].index()])max_i=i;
+		}
+		Literal p=to_learn[max_i];
+		to_learn[max_i]=to_learn[1];
+		to_learn[1]=p;
+		btLevel=levels[p.index()];
+	}
 	return btLevel;
 };
 
@@ -190,11 +212,6 @@ void Solver::undoOne(){
 	assignments[p.index()]=U;
 	Clause empty;*(reason+p.val())=empty;
 	levels[p.index()]=-1;
-
-	while(undos[p.val()].size()>0){
-		undos[p.val()].back()->undo(this, p);
-		undos[p.val()].pop_back();
-	}
 	trail.pop_back();
 };
 
@@ -251,8 +268,6 @@ void Solver::backtrack(int btLevel){
 };
 
 void Solver::simplify(){
-	std::vector<Clause> final_cs;
-	//TODO: simplify already assigned + sussumption
 };
 
 void Solver::reduceLearnts(){};
@@ -289,11 +304,12 @@ void Solver::decayActivity(){
 	}
 };
 
+#if ASSERT
 bool Solver::isSAT(){
 	for(int i=-nClauses;i<0;++i){
 		bool sat=false;
-		for(int j=0; j<clauses[i].size();++j){
-			sat=sat||(value(clauses[i].at(j))==T?true:false);
+		for(int j=0; j<clauses[i]->size();++j){
+			sat=sat||(value(clauses[i]->at(j))==T?true:false);
 		}
 		if(!sat){
 			return false;
@@ -303,19 +319,40 @@ bool Solver::isSAT(){
 };
 
 bool Solver::canBeSAT(){
-	for(int i=-nClauses;i<0;++i){
+	for(int i=0;i<nClauses;++i){
 		bool sat=false;
-		for(int j=0; j<clauses[i].size();++j){
-			if(value(clauses[i][j])==T||value(clauses[i][j])==U)
+		for(int j=0; j<clauses[i]->size();++j){
+			if(value(clauses[i]->at(j))==T||value(clauses[i]->at(j))==U)
 				sat=true;
 		}
 		if(!sat)return false;
 	}
+	for(int i=0; i<learnts.size();++i){
+		bool sat=false;
+		     for(int j=0;j<learnts[i]->size();++j){
+			if(value(learnts[i]->at(j))==T||value(learnts[i]->at(j))==U)sat=true;
+		     }
+		if(!sat) return false;
+	}
 	return true;
 };
+#endif
 
 void Solver::reward(Clause* c){
 	for(int i=0; i<c->size();++i){
 		activity[c->at(i).val()]+=BONUS;
 	}
 };
+
+#if ASSERT
+void Solver::assertWatches(int index){
+	for(auto x : watches[index]){
+		int count=0;
+		for(auto y : watches[index]){
+			if(x==y) count++;
+
+		assert(count<2);
+		}
+	}
+};
+#endif

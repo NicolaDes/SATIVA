@@ -76,8 +76,9 @@
 	friend class Solver;
 	private:
 		LiteralList literals;
-
 	public:
+
+		bool learnt=false;
 		Clause(){};
 
 		/**
@@ -103,6 +104,7 @@
 		 * @warning Prototype function
 		 */
 		void undo(Solver* solver, Literal& p);
+		void validate(Solver* solver);
 		/**
 		 * Simplify on current assignment
 		 */
@@ -156,5 +158,12 @@
 			
 	};
 
+	struct Watcher{
+		Clause* cref;
+		Literal blocker;
+		Watcher(Clause* _cref, Literal _blocker) : cref(_cref), blocker(_blocker){};
+		inline bool propagate(Solver* s, Literal* p){return cref->propagate(s, p);};
+		inline bool operator ==(const Watcher& w){return (*cref==*w.cref&&w.blocker==blocker);};
+	};
 
 #endif

@@ -6,6 +6,7 @@
 #include <list>
 #include "omp.h"
 #include <cassert>
+#include <memory>
 
 class Solver{
 	public:
@@ -18,6 +19,7 @@ class Solver{
 		 * @warning To use the solver, this method is foundamental
 		 */
 		void init(int nL, int nC);
+
 
 		/**
 		 * Create a new clause in the heap of the program!
@@ -71,7 +73,9 @@ class Solver{
 		 * Return the number of restarts
 		 */
 		int nRestart(){return nRestarts;};
-		
+
+
+	
 	private:
 		//!< Constants values
 		const int root_level=0;
@@ -89,11 +93,11 @@ class Solver{
 		int nClauses;
 		int nLiterals;
 		//!< Default constraints
-		Clause* clauses; //!< List of clauses.
+		std::vector<Clause*> clauses; //!< List of clauses.
 		std::vector<Clause*> learnts; //!< List of learnt clauses.
 
 		//!< Propagation constraints
-		std::set<Clause*>*  watches; //!< For each literal with a positive phase a list of clause to be watched if p changes value.
+		std::vector<Watcher>*  watches; //!< For each literal with a positive phase a list of clause to be watched if p changes value.
 		Clause* reason;
 		std::queue<Literal> propQ;
 		std::vector<Clause*>* undos;
@@ -119,11 +123,15 @@ class Solver{
 			std::set<T> empty;
 			std::swap(origin, empty);
 		};
+#if ASSERT
+void assertWatches(int index);
 		
-		/**
-		 * Check if is possible to be SAT
-		 */
-		bool canBeSAT();
+/**
+* Check if is possible to be SAT
+*/
+bool canBeSAT();
+
+#endif
 
 		/**
 		 * Select new variable
@@ -236,6 +244,10 @@ class Solver{
 		 * Record a learnt clause
 		 */
 		void record(std::vector<Literal>& clause);
+		/**
+		 * Attach wathcer to watches
+		 */
+		void attachWatcher(Clause* clause);
 };
 
 //functions prototypes
@@ -252,10 +264,11 @@ class Solver{
 	 * </ul>
 	 */
 	inline bool Clause::propagate(Solver *solver, Literal* p){
-//		if(literals[0]!=~*p&&literals[1]!=~*p) return true;
+#if ASSERT
 		assert(size()>0);
 		assert(literals[0]==~*p||literals[1]==~*p);
 		assert(solver->value(~*p)==F);
+#endif
 		
 		if(literals[0]==~*p){
 			literals[0]=literals[1];literals[1]=~*p;
@@ -263,27 +276,27 @@ class Solver{
 		assert(literals[1]==~*p); //!< l2 = F
 		
 		if(solver->value(literals[0])==T){
-			//Not necessary to search an other watched literal, waste of time
-	/*		for(int i=2;i<size();++i){
-				if(solver->value(literals[i])!=F){
-					Literal tmp=literals[1];
-					literals[1]=literals[i];literals[i]=tmp;
-					solver->watched_list[-literals[1].val()].push_back(this);
-					std::cout<<"swapped "<<literals[i]<<", with "<<literals[1]<<", deleted: "<<*this<<" and added to "<<-literals[1].val()<<" "<<*solver->watched_list[-literals[1].val()].back()<<"\n";
-					break;
-				}
-			}*/
-			solver->watches[p->val()].insert(this);
+			solver->watches[p->val()].push_back(Watcher(this, *p));
+#if ASSERT
+solver->assertWatches(p->val());
+#endif
 			return true;
 		}
 		for(int i=2; i<size();++i){
 			if(solver->value(literals[i])!=F){
 				literals[1]=literals[i];literals[i]=~*p;
-				solver->watches[-literals[1].val()].insert(this);
+				solver->watches[-literals[1].val()].push_back(Watcher(this,literals[1]));
+#if ASSERT
+solver->assertWatches(-literals[1].val());
+#endif
 				return true;
 			}
 		}
-		solver->watches[p->val()].insert(this);
+		
+		solver->watches[p->val()].push_back(Watcher(this, *p));
+#if ASSERT
+solver->assertWatches(p->val());
+#endif
 		return solver->enqueue(literals[0], this);
 	};
 
@@ -293,7 +306,7 @@ class Solver{
 	};
 
 	inline void Clause::undo(Solver* solver, Literal& p){
-		solver->watches[-p.val()].insert(this);
+		solver->watches[-p.val()].push_back(Watcher(this, p));
 	};
 
 	inline void Clause::simplify(Literal& l){
