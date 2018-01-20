@@ -60,8 +60,14 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 			enqueue(lits_val[0]);
 			return;
 		}
-		attachWatcher(clauses.back());
+//		attachWatcher(clauses.back());
 	}	
+}
+
+void Solver::sussume(std::vector<Clause*>& set){
+	int nSussumption=0;
+	std::cout<<"nSussumptions: "<<nSussumption;
+	nClauses-=nSussumption;
 }
 
 void Solver::attachWatcher(Clause* clause){
@@ -232,6 +238,13 @@ Literal Solver::select(){
 bool Solver::CDCL(){
 	int nConflict=0;
 	
+	sussume(clauses);
+
+	for(auto x=clauses.begin();x!=clauses.end();++x){
+		if((*x)->size()>1)
+			attachWatcher(*x);
+	}
+	
 	while(true){
 		Clause* conflict=propagate();
 		if(conflict!=nullptr){ //!< Exist a conflict
@@ -251,7 +264,8 @@ bool Solver::CDCL(){
 			if(learnts.size()-nAssigns()>=learnts.size()) reduceLearnts();
 			if(nAssigns()==nLiterals) return true;
 			else if(nConflict>max_conflict) {
-				max_conflict+=max_conflict;
+				nRestarts++;
+				max_conflict+=100;
 				backtrack(root_level);
 			}
 			else{

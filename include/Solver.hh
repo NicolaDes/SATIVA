@@ -74,12 +74,15 @@ class Solver{
 		 */
 		int nRestart(){return nRestarts;};
 
+		std::string pName(){return problemName;};
+		void setName(std::string name){problemName=name;};
 
 	
 	private:
 		//!< Constants values
 		const int root_level=0;
-		int max_conflict=100000;
+		std::string problemName;
+		int max_conflict=100;
 
 		int nRestarts=0;
 		int nConflicts=0;
@@ -248,6 +251,10 @@ bool canBeSAT();
 		 * Attach wathcer to watches
 		 */
 		void attachWatcher(Clause* clause);
+		/**
+		 * Sussume a set of clauses
+		 */
+		void sussume(std::vector<Clause*>& set);
 };
 
 //functions prototypes
@@ -312,5 +319,15 @@ solver->assertWatches(p->val());
 	inline void Clause::simplify(Literal& l){
 		auto it=literals.begin();while(*it!=l)++it;
 		literals.erase(it);
+	};
+
+	inline void Clause::detach(Solver* solver){
+		for(auto x=solver->watches[-literals[0].val()].begin();x!=solver->watches[-literals[0].val()].end();++x){
+			if(*(*x).cref==*this) solver->watches[-literals[0].val()].erase(x);
+		}
+		for(auto x=solver->watches[-literals[1].val()].begin();x!=solver->watches[-literals[1].val()].end();++x){
+			if(*(*x).cref==*this) solver->watches[-literals[1].val()].erase(x);
+		}
+
 	};
 #endif

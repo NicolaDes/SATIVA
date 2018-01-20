@@ -14,6 +14,8 @@ namespace Dimacs{
 		char c;
 		int nL, nC;
 		FILE *fp=fopen(file, "r");
+
+		solver.setName(file);
 		
 		if(fp==nullptr){
 			std::cerr<<"ERROR reading file.\n\tSystem aborting!!\n";

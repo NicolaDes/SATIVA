@@ -68,14 +68,14 @@ namespace tabular{
 		for(int i=0; i<model.size();++i){if(model[i]!=U) std::cout<<((model[i]==T)?"x_":"-x_")<<i<<"; ";};
 		cout<<"}\n";
 
-		cout<<"|-----------------------------------------------|\n";
-		cout<<"|        Memory usage: ";
-		cout<<system_util::memUsedPeak()<<" MB\t\t\t|\n";
-		cout<<"|        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" s\t\t\t|\n";
-		cout<<"|        Learnt clauses: "<<solver->nLearnts()<<"\t\t\t|\n";
-		cout<<"|        #Restarts: "<<solver->nRestart()<<"\t\t\t|\n";
-		cout<<"|        Decisions: "<<solver->nDecision()<<"\t\t\t\t|\n";
-		cout<<"|        Propagations: "<<solver->nPropagation()<<"\t\t\t|\n";
+		cout<<"|===============================================|\n\n";
+		cout<<"        Memory usage: ";
+		cout<<system_util::memUsedPeak()<<" MB\n";
+		cout<<"        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" s\n";
+		cout<<"        Learnt clauses: "<<solver->nLearnts()<<"\n";
+		cout<<"        #Restarts: "<<solver->nRestart()<<"\n";
+		cout<<"        Decisions: "<<solver->nDecision()<<"\n";
+		cout<<"        Propagations: "<<solver->nPropagation()<<"\n";
 
 	};
 	//TODO: temporaneo, per il gdb
@@ -104,20 +104,19 @@ namespace tabular{
 			}
 		}
 #endif
-		cout<<"|-----------------------------------------------|\n";
-		cout<<"|        Memory usage: ";
-		cout<<system_util::memUsedPeak()<<" MB\t\t\t|\n";
-		cout<<"|        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" s\t\t\t|\n";
-		cout<<"|        Learnt clauses: "<<solver->nLearnts()<<"\t\t\t|\n";
-		cout<<"|        #Restarts: "<<solver->nRestart()<<"\t\t\t|\n";
-		cout<<"|        Decisions: "<<solver->nDecision()<<"\t\t\t\t|\n";
-		cout<<"|        Propagations: "<<solver->nPropagation()<<"\t\t\t|\n";
+		cout<<"|===============================================|\n\n";
+		cout<<"        Memory usage: ";
+		cout<<system_util::memUsedPeak()<<" MB\n";
+		cout<<"        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" sec\n";
+		cout<<"        Learnt clauses: "<<solver->nLearnts()<<"\n";
+		cout<<"        #Restarts: "<<solver->nRestart()<<"\n";
+		cout<<"        Decisions: "<<solver->nDecision()<<"\n";
+		cout<<"        Propagations: "<<solver->nPropagation()<<"\n";
 	};
 
 	void generateGV(Solver* solver){
 		clk=clock()-clk;
 		double mem_used=system_util::memUsedPeak();
-		std::vector<lbool> model=solver->getModel();
 		cout<<"|                     UNSAT                     |\n";
 		cout<<"|-----------------------------------------------|\n";
 #if PROVE
@@ -138,21 +137,32 @@ namespace tabular{
 		fout<<"}\n";
 		fout.close();
 #endif
-		cout<<"|-----------------------------------------------|\n";
-		cout<<"|        Memory usage: ";
-		cout<<system_util::memUsedPeak()<<" MB\t\t\t|\n";
-		cout<<"|        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" s\t\t\t|\n";
-		cout<<"|        Learnt clauses: "<<solver->nLearnts()<<"\t\t\t|\n";
-		cout<<"|        Conflict clauses: "<<solver->nConflict()<<"\t\t\t|\n";
-		cout<<"|        #Restarts: "<<solver->nRestart()<<"\t\t\t|\n";
-		cout<<"|        Decisions: "<<solver->nDecision()<<"\t\t\t\t|\n";
-		cout<<"|        Propagations: "<<solver->nPropagation()<<"\t\t\t|\n";
+		cout<<"|===============================================|\n\n";
+		cout<<"        Memory usage: ";
+		cout<<system_util::memUsedPeak()<<" MB\n";
+		cout<<"        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" sec\n";
+		cout<<"        Learnt clauses: "<<solver->nLearnts()<<"\n";
+		cout<<"        Conflict clauses: "<<solver->nConflict()<<"\n";
+		cout<<"        #Restarts: "<<solver->nRestart()<<"\n";
+		cout<<"        Decisions: "<<solver->nDecision()<<"\n";
+		cout<<"        Propagations: "<<solver->nPropagation()<<"\n";
 
 	};
 
 	void printEnd(){
-		cout<<"|-----------------------------------------------|\n";
+		cout<<"\n";
+		cout<<"|><>><>><>><>><>><>><>><>><>><>><>><>><>><>><>>>|\n";
 		cout<<"\n\n";
+	};
+
+	void generateCSV(Solver* solver, bool sat){
+		clk=clock()-clk;
+		ofstream fout;
+		fout.open ("test.csv", std::ofstream::out | std::ofstream::app);
+		fout<<solver->pName()<<","<<solver->nL()<<","<<solver->nC()<<",=("<<clk<<")/"<<CLOCKS_PER_SEC<<","<<solver->nConflict()<<","<<solver->nLearnts()<<","<<solver->nDecision()<<","<<solver->nPropagation()<<","<<((sat)?"SAT":"UNSAT");
+		fout<<",";
+		fout<<system_util::memUsedPeak()<<"\n";
+		fout.close();
 	};
 };
 

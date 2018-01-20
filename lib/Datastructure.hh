@@ -109,6 +109,9 @@
 		 * Simplify on current assignment
 		 */
 		void simplify(Literal& l);
+		void detach(Solver* solver);
+		
+		//---------------------------------------------------
 		/**
 		 * Return the object literal at position :x
 		 */
@@ -120,6 +123,7 @@
 		 * Operator order for clause. Ci < Cj if Ci is included in Cj
 		 */
 		friend bool operator <(const Clause& c1, const Clause& c2) {
+			if(c1.size()==c2.size())return false;
 			for(int i=0; i<c1.size();++i){
 				bool found=false;
 				for(int j=0; j<c2.size();++j){
