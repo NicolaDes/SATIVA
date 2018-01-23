@@ -44,6 +44,8 @@ class Solver{
 		 */
 		inline std::vector<std::vector<Clause> >& getProve(){return resolvents;};
 
+		inline int getDeletedClause(){return deletedClauses;};
+
 		/**
 		 * Return the number of conflicts
 		 */
@@ -82,7 +84,8 @@ class Solver{
 		//!< Constants values
 		const int root_level=0;
 		std::string problemName;
-		int max_conflict=100;
+		int max_conflict;
+		int deletedClauses=0;
 
 		int nRestarts=0;
 		int nConflicts=0;
@@ -254,7 +257,7 @@ bool canBeSAT();
 		/**
 		 * Sussume a set of clauses
 		 */
-		void sussume(std::vector<Clause*>& set);
+		void sussume(Clause& c);
 };
 
 //functions prototypes
@@ -271,6 +274,10 @@ bool canBeSAT();
 	 * </ul>
 	 */
 	inline bool Clause::propagate(Solver *solver, Literal* p){
+		if(deleted){
+			//std::cout<<"Found a deleted clause: "<<*this<<"\n";
+		       	return true;
+		}
 #if ASSERT
 		assert(size()>0);
 		assert(literals[0]==~*p||literals[1]==~*p);
@@ -323,11 +330,18 @@ solver->assertWatches(p->val());
 
 	inline void Clause::detach(Solver* solver){
 		for(auto x=solver->watches[-literals[0].val()].begin();x!=solver->watches[-literals[0].val()].end();++x){
-			if(*(*x).cref==*this) solver->watches[-literals[0].val()].erase(x);
+			if(*(*x).cref==*this) {solver->watches[-literals[0].val()].erase(x);break;}
 		}
 		for(auto x=solver->watches[-literals[1].val()].begin();x!=solver->watches[-literals[1].val()].end();++x){
-			if(*(*x).cref==*this) solver->watches[-literals[1].val()].erase(x);
+			if(*(*x).cref==*this) {solver->watches[-literals[1].val()].erase(x);break;}
 		}
 
+	};
+
+	inline bool Clause::satisfied(Solver* solver){
+		for(auto x : literals){
+			if(solver->value(x)==T) return true;
+		}
+		return false;
 	};
 #endif

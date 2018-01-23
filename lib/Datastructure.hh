@@ -76,6 +76,7 @@
 	friend class Solver;
 	private:
 		LiteralList literals;
+		bool deleted=false;
 	public:
 
 		bool learnt=false;
@@ -89,6 +90,8 @@
 		};
 		
 
+		void inline del(){deleted=true;};
+		bool inline isDel(){return deleted;};
 		/**
 		 * @warning Prototype function
 		 * Propagate the clause.
@@ -110,6 +113,8 @@
 		 */
 		void simplify(Literal& l);
 		void detach(Solver* solver);
+
+		bool satisfied(Solver* solver);
 		
 		//---------------------------------------------------
 		/**

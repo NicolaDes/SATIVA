@@ -19,6 +19,8 @@ void Solver::init(int nL, int nC){
 	#pragma omp parallel for private(i)
 	for(i=0; i<nL+1;++i) activity[i]=0;
 
+	max_conflict=4000;
+
 	initialized=true;
 }
 
@@ -43,7 +45,7 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 		}
 
 		if(size==1){
-		enqueue(lits_val[0]);
+		Clause c; c.addLiteral(lits_val[0]);
 		return;
 		}
 		reward(learnts.back());
@@ -60,13 +62,29 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 			enqueue(lits_val[0]);
 			return;
 		}
+
+		for(auto x : clauses){
+			if(x->satisfied(this)&&!x->isDel()){
+				deletedClauses++;
+			       	x->del();
+			}
+		}
 //		attachWatcher(clauses.back());
 	}	
 }
 
-void Solver::sussume(std::vector<Clause*>& set){
+void Solver::sussume(Clause& c){
+	if(trail.size()==0)return;
 	int nSussumption=0;
-	std::cout<<"nSussumptions: "<<nSussumption;
+	for(auto it=clauses.begin();it!=clauses.end();++it){
+		if(c<**it&&!(*it)->isDel()){
+			(*it)->del();
+			deletedClauses++;
+//			(*it)->detach(this);
+			nSussumption++;
+		}
+	}
+	if(nSussumption>0)std::cout<<"nSussumptions: "<<nSussumption;
 	nClauses-=nSussumption;
 }
 
@@ -222,7 +240,7 @@ void Solver::undoOne(){
 };
 
 Literal Solver::select(){
-	int max_so_far=-1;
+	int max_so_far=-10;
 	var x = 0;
 	for(int i=-nLiterals;i<nLiterals+1;++i){
 		if(i==0) continue;
@@ -238,7 +256,7 @@ Literal Solver::select(){
 bool Solver::CDCL(){
 	int nConflict=0;
 	
-	sussume(clauses);
+//	sussume(clauses);
 
 	for(auto x=clauses.begin();x!=clauses.end();++x){
 		if((*x)->size()>1)
@@ -265,7 +283,7 @@ bool Solver::CDCL(){
 			if(nAssigns()==nLiterals) return true;
 			else if(nConflict>max_conflict) {
 				nRestarts++;
-				max_conflict+=100;
+				max_conflict+=4000;
 				backtrack(root_level);
 			}
 			else{
@@ -282,6 +300,14 @@ void Solver::backtrack(int btLevel){
 };
 
 void Solver::simplify(){
+	int tmp=deletedClauses;
+	for(auto x:clauses){
+		if(x->satisfied(this)&&!x->isDel()){
+			deletedClauses++;
+			x->del();
+		}
+	}
+	if(deletedClauses-tmp>0) std::cout<<"Deleted clauses: "<<deletedClauses-tmp<<"\n";
 };
 
 void Solver::reduceLearnts(){};
@@ -314,7 +340,8 @@ bool Solver::assume(Literal& p){
 void Solver::decayActivity(){
 	int i;int MAX=nLiterals;const float dc_factor=DECAY_FACTOR;
 	for(i=-MAX;i<MAX+1;++i){
-		activity[i]=(activity[i]/dc_factor);
+		if(activity[i]<=0)continue;
+		activity[i]-=dc_factor;
 	}
 };
 

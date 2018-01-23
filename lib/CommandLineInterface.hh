@@ -112,6 +112,7 @@ namespace tabular{
 		cout<<"        #Restarts: "<<solver->nRestart()<<"\n";
 		cout<<"        Decisions: "<<solver->nDecision()<<"\n";
 		cout<<"        Propagations: "<<solver->nPropagation()<<"\n";
+		cout<<"        Deleted clauses: "<<solver->getDeletedClause()<<"\n";
 	};
 
 	void generateGV(Solver* solver){
@@ -146,6 +147,7 @@ namespace tabular{
 		cout<<"        #Restarts: "<<solver->nRestart()<<"\n";
 		cout<<"        Decisions: "<<solver->nDecision()<<"\n";
 		cout<<"        Propagations: "<<solver->nPropagation()<<"\n";
+		cout<<"        Deleted clauses: "<<solver->getDeletedClause()<<"\n";
 
 	};
 
