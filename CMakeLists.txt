@@ -33,5 +33,9 @@ if(PIG)
 	target_link_libraries(PIG_test SOLVER)
 endif()
 
+if(CSV)
+	add_executable(CSV_test test/CSV.cc)
+	target_link_libraries(CSV_test SOLVER)
+endif()
 file (COPY "inputs" DESTINATION ".")
 

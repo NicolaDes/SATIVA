@@ -46,6 +46,8 @@ namespace tabular{
 		cout<<"\t\t\t";
 		cout<<"|\n";
 		cout<<"|-----------------------------------------------|\n";
+		cout<<"\t-> problem: "<<solver->pName()<<"\n";
+		cout<<"|-----------------------------------------------|\n";
 	};
 
 	void printLaunch(Solver* solver){
@@ -161,7 +163,7 @@ namespace tabular{
 		clk=clock()-clk;
 		ofstream fout;
 		fout.open ("test.csv", std::ofstream::out | std::ofstream::app);
-		fout<<solver->pName()<<","<<solver->nL()<<","<<solver->nC()<<",=("<<clk<<")/"<<CLOCKS_PER_SEC<<","<<solver->nConflict()<<","<<solver->nLearnts()<<","<<solver->nDecision()<<","<<solver->nPropagation()<<","<<((sat)?"SAT":"UNSAT");
+		fout<<solver->pName()<<","<<solver->nL()<<","<<solver->nC()<<",=("<<clk<<")/"<<CLOCKS_PER_SEC<<","<<solver->nConflict()<<","<<solver->nLearnts()<<","<<solver->nDecision()<<","<<solver->nPropagation()<<","<<solver->getDeletedClause()<<","<<((sat)?"SAT":"UNSAT");
 		fout<<",";
 		fout<<system_util::memUsedPeak()<<"\n";
 		fout.close();
