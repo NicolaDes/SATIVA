@@ -60,6 +60,21 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 			enqueue(lits_val[0]);
 			return;
 		}
+		Clause* c = clauses.back();
+		//check if new clause sussumes others
+		for(int i=0; i<clauses.size();++i){
+
+			if(!c->isDel()&&clauses[i]->isDel()){
+				if(*clauses[i]<*c){
+					deletedClauses++;
+					c->del();
+					break;
+				}else if(*c<*clauses[i]){
+					deletedClauses++;
+					clauses[i]->del();
+				}
+			}
+		}
 
 		for(auto x : clauses){
 			if(x->satisfied(this)&&!x->isDel()){
@@ -67,7 +82,7 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 			       	x->del();
 			}
 		}
-//		attachWatcher(clauses.back());
+		if(!c->isDel())attachWatcher(clauses.back());
 	}	
 }
 
@@ -143,7 +158,6 @@ Clause* Solver::propagate(){
 bool Solver::enqueue(Literal p, Clause* c){ 
 	if(value(p)!=U){ 
 		if(value(p)==F){
-			nConflicts++;
 			return false;
 		}else{
 			return true;
@@ -252,19 +266,19 @@ Literal Solver::select(){
 };
 
 bool Solver::CDCL(){
-	int nConflict=0;
 	
 //	sussume(clauses);
 
-	for(auto x=clauses.begin();x!=clauses.end();++x){
+/*	for(auto x=clauses.begin();x!=clauses.end();++x){
 		if((*x)->size()>1)
 			attachWatcher(*x);
 	}
+	*/
 	
 	while(true){
 		Clause* conflict=propagate();
 		if(conflict!=nullptr){ //!< Exist a conflict
-			nConflict++;
+			nConflicts++;
 			std::vector<Literal> to_learn;int btLevel;
 			if(decisionLevel()==root_level){ 
 				analyze(conflict, to_learn);return false;}
@@ -279,7 +293,7 @@ bool Solver::CDCL(){
 			if(decisionLevel()==0) simplify();
 			if(learnts.size()-nAssigns()>=learnts.size()) reduceLearnts();
 			if(nAssigns()==nLiterals) return true;
-			else if(nConflict>max_conflict) {
+			else if(nConflicts>max_conflict) {
 				nRestarts++;
 				backtrack(root_level);
 				lubyActivity();
@@ -305,7 +319,9 @@ void Solver::simplify(){
 			x->del();
 		}
 	}
-	if(deletedClauses-tmp>0) std::cout<<"Deleted clauses: "<<deletedClauses-tmp<<"\n";
+#if VERBOSE
+	if(deletedClauses-tmp>0) std::cout<<"Deleted clauses: "<<deletedClauses-tmp<<", limits: "<<max_conflict<<"\n";
+#endif
 };
 
 void Solver::reduceLearnts(){};
