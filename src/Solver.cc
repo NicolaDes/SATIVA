@@ -19,8 +19,6 @@ void Solver::init(int nL, int nC){
 	#pragma omp parallel for private(i)
 	for(i=0; i<nL+1;++i) activity[i]=0;
 
-	max_conflict=4000;
-
 	initialized=true;
 }
 
@@ -283,8 +281,8 @@ bool Solver::CDCL(){
 			if(nAssigns()==nLiterals) return true;
 			else if(nConflict>max_conflict) {
 				nRestarts++;
-				max_conflict+=4000;
 				backtrack(root_level);
+				lubyActivity();
 			}
 			else{
 				Literal p = select();

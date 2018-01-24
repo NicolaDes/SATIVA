@@ -6,3 +6,4 @@
 #define BONUS @BONUS_VAL@
 #define ASSERT @VERIFICA_ON@
 #define PROVE @PROVE_ON@
+#define LUBY_BASE @LUBY_BASE_VAL@

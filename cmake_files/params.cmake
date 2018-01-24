@@ -9,4 +9,9 @@ else()
 	set (BONUS_VAL ${DECAY_VAL})
 endif()
 
+if (LUBY_BASE)
+	set (LUBY_BASE_VAL ${LUBY_BASE})
+else()
+	set (LUBY_BASE_BAL 3)
+endif()
 

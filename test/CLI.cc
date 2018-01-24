@@ -19,7 +19,6 @@ int main(int argc, char** argv){
 	tabular::printInit(&solver);
 	tabular::printLaunch(&solver);
 	bool res = solver.CDCL();
-//	tabular::generateCSV(&solver,res);
 
 	if(res) tabular::printModel(&solver);
 	else{

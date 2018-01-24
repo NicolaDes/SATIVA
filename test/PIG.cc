@@ -15,6 +15,9 @@ int main(int argc, char** argv){
 
 	Solver solver;
 
+	std::string name="pigeonhole ";
+	name+=argv[1];
+	solver.setName(name);
 
 	int holes = atoi(argv[1]);
 

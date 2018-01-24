@@ -7,6 +7,7 @@
 #include "omp.h"
 #include <cassert>
 #include <memory>
+#include <math.h>
 
 class Solver{
 	public:
@@ -83,8 +84,9 @@ class Solver{
 	private:
 		//!< Constants values
 		const int root_level=0;
+		const int luby_base=100;
 		std::string problemName;
-		int max_conflict;
+		int max_conflict=1;
 		int deletedClauses=0;
 
 		int nRestarts=0;
@@ -258,6 +260,22 @@ bool canBeSAT();
 		 * Sussume a set of clauses
 		 */
 		void sussume(Clause& c);
+		/**
+		 * Luby activity
+		 * It receive the increment value in y and the current number of conflict and stores the new luby sequence on max_conflict
+		 */
+		inline void lubyActivity(){
+			int y=2;int x=nRestarts;
+			int size, seq;
+			for(size=1,seq=0;size<x+1;seq++,size=2*size+1);
+			while(size-1!=x){
+				size=(size-1)>>1;
+				seq--;
+				x=x%size;
+			}
+		//	if(max_conflict!=(pow(y,seq)*luby_base)) 
+			max_conflict=(pow(y,seq))*luby_base;
+		};
 };
 
 //functions prototypes
