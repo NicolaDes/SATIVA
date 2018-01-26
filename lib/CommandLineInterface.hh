@@ -80,12 +80,7 @@ namespace tabular{
 		cout<<"        Propagations: "<<solver->nPropagation()<<"\n";
 
 	};
-	//TODO: temporaneo, per il gdb
-	void printLearnt(std::vector<Clause*>& v){
-		for(int i=0; i<v.size();++i){
-			std::cout<<*v[i]<<"\n";
-		}
-	};
+	
 	void printProve(Solver* solver){
 		getrusage(RUSAGE_SELF, &rus);
 		clk=clock()-clk;
@@ -95,14 +90,12 @@ namespace tabular{
 		cout<<"|-----------------------------------------------|\n";
 #if PROVE
 		cout<<"|-------------------< PROVE >-------------------|\n";
-		std::vector<std::vector<Clause> > prove = solver->getProve();
-		for(int i = 0; i<prove.size();++i){
-			int level=0;
-			for(auto x = prove[i].begin();x!=prove[i].end();++x){
-				cout<<"|";
-				for(int j = (level%2==0)?level:level-1; j>0; j--) cout<<"----";
-				cout<<*x<<"\n";
-				level++;
+		std::vector<btree<Clause>> prove_vector= solver->getProve();
+		for(auto prove : prove_vector){
+			node<Clause>* curr=prove.begin();
+			while(!prove.ended(curr)){
+				std::cout<<curr->left->key_value<<"&"<<curr->right->key_value<<"="<<curr->key_value<<"\n";
+				curr=curr->next();
 			}
 		}
 #endif
@@ -126,18 +119,17 @@ namespace tabular{
 		cout<<"|------------< Generating prove... >------------|\n";
 		ofstream fout;fout.open("graphics/prove.gv");
 		fout<<"digraph G {\n";
-		std::vector<std::vector<Clause> >prove = solver->getProve();
-		for(int i=0; i<prove.size();++i){
-			for(int j=0;j<prove[i].size()-2;++j){
-				if(prove[i].size()<2){
-					fout<<"\""<<prove[i][j]<<"\";\n";
-					break;
-				}
-				fout<<"\""<<prove[i][j]<<"\" -> \""<<prove[i][j+2]<<"\";\n\""<<prove[i][j+1]<<"\" -> \""<<prove[i][j+2]<<"\";\n";
-				j++;
+		std::vector<btree<Clause>> prove_vector = solver->getProve();
+		for(auto prove : prove_vector){
+			node<Clause>* curr=prove.begin();
+			while(!prove.ended(curr)){
+				fout<<"\""<<curr->left->key_value<<"\" -> "<<"\""<<curr->key_value<<"\";\n";
+				fout<<"\""<<curr->right->key_value<<"\" -> "<<"\""<<curr->key_value<<"\";\n";
+				curr=curr->next();
 			}
 		}
-		fout<<"}\n";
+		fout<<"}";
+
 		fout.close();
 #endif
 		cout<<"|===============================================|\n\n";

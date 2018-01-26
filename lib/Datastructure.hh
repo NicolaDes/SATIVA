@@ -102,16 +102,10 @@
 		 * @warning Prototype function
 		 */
 		void calcReason(Solver* solver, Literal& p, std::vector<Literal>& p_reason);	
+
 		/**
-		 * Undo last assignment restoring original status of the clause
-		 * @warning Prototype function
+		 * Detaching clause from solver watcher
 		 */
-		void undo(Solver* solver, Literal& p);
-		void validate(Solver* solver);
-		/**
-		 * Simplify on current assignment
-		 */
-		void simplify(Literal& l);
 		void detach(Solver* solver);
 
 		bool satisfied(Solver* solver);
@@ -173,6 +167,52 @@
 		Watcher(Clause* _cref, Literal _blocker) : cref(_cref), blocker(_blocker){};
 		inline bool propagate(Solver* s, Literal* p){return cref->propagate(s, p);};
 		inline bool operator ==(const Watcher& w){return (*cref==*w.cref&&w.blocker==blocker);};
+	};
+
+	template<class T>
+	struct node{
+		T key_value;
+		node *left;
+		node *right;
+		node<T>* next(){return left;};
+	};
+
+	template<class T>
+	class btree{
+		private:
+			node<T>* root;
+			node<T>* curr;
+		
+			void destroy_tree(node<T>* leaf){if(leaf!=nullptr){destroy_tree(leaf->left);destroy(leaf->right);delete leaf;}};
+		public:
+			btree(){root=curr=nullptr;};
+			~btree(){};
+
+			void destroy_tree(){destroy_tree(root);};
+			void insert(T& left, T& right){
+				if(root==nullptr){
+					std::cerr<<"No root was defined!!\n";
+					exit(1);
+				}
+				curr->left=new node<T>;
+				curr->left->key_value=left;
+				curr->right=new node<T>;
+				curr->right->key_value=right;
+
+
+				curr->left->left=nullptr;
+				curr->left->right=nullptr;
+				curr->right->left=nullptr;
+				curr->right->right=nullptr;
+
+				curr=curr->left;
+			};
+			void addRdx(T& rdx){/*std::cout<<"Root: "<<rdx<<"\n";*/root=new node<T>;root->key_value = rdx;curr=root;};
+
+			node<T>* search(int key){};
+
+			node<T>* begin(){return root;};
+			bool ended(node<T>* c){return c==curr;};
 	};
 
 #endif

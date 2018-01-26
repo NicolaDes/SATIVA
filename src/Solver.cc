@@ -7,8 +7,6 @@ void Solver::init(int nL, int nC){
 	reason=reason+nL;
 	assignments.resize(nL+1, lbool(U));
 	levels.resize(nL+1, 0);
-	undos = new std::vector<Clause*>[(2*nL)+1];
-	undos = undos + nL;
 	nLiterals=nL;nClauses=nC;
 	activity = new float[(2*nL)+1];	
 	for(int i=0; i<nL;++i){
@@ -86,21 +84,6 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 	}	
 }
 
-void Solver::sussume(Clause& c){
-	if(trail.size()==0)return;
-	int nSussumption=0;
-	for(auto it=clauses.begin();it!=clauses.end();++it){
-		if(c<**it&&!(*it)->isDel()){
-			(*it)->del();
-			deletedClauses++;
-//			(*it)->detach(this);
-			nSussumption++;
-		}
-	}
-	if(nSussumption>0)std::cout<<"nSussumptions: "<<nSussumption;
-	nClauses-=nSussumption;
-}
-
 void Solver::attachWatcher(Clause* clause){
 	watches[-clause->at(0).val()].push_back(Watcher(clause, clause->at(0)));
 	watches[-clause->at(1).val()].push_back(Watcher(clause, clause->at(1)));
@@ -117,8 +100,6 @@ Solver::~Solver(){
 	delete [] watches;
 	reason=reason-nLiterals;
 	delete [] reason;
-	undos=undos -nLiterals;
-	delete [] undos;
 	activity=activity-nLiterals;
 	delete [] activity;
 	for(int i=0; i<learnts.size();i++) delete learnts[i];
@@ -171,18 +152,40 @@ bool Solver::enqueue(Literal p, Clause* c){
 			assert(c->size()>0);
 		if(c!=nullptr){
 			reason[p.val()]=*c;
+		}else{
+			Clause unit_c;unit_c.addLiteral(p);
+			reason[p.val()]=unit_c;
 		}
 		trail.push_back(p);
 		propQ.push(p);
 		return true;
 	}
 };
+#if PROVE
+void Solver::completeResolvs(Clause* conflict){
+	btree<Clause> tree;
+	std::vector<Clause> tmp;
+	Clause c_tmp=*conflict;
+	for(int i=trail.size()-1;i>=0;i--){
+		tmp.push_back(c_tmp);
+		tmp.push_back(reason[trail[i].val()]);
+		c_tmp=c_tmp&reason[trail[i].val()];
+	}
+	int i=tmp.size()-1;
+	Clause empty=c_tmp;
+	
+	tree.addRdx(empty);
+	for(;i>=0;--i){
+		tree.insert(tmp[i-1], tmp[i]);
+		--i;
+	}
+	prove.push_back(tree);
+	return;
+};
+#endif
 
 int Solver::analyze(Clause* conflict, std::vector<Literal>& to_learn, bool unsat){
-#if PROVE
-	std::vector<Clause> resolution;
-	resolution.push_back(*conflict);
-#endif
+
 	std::vector<Literal> p_reason;
 	Literal p(0);
 	std::vector<bool> seen(nLiterals+1, false);
@@ -191,6 +194,13 @@ int Solver::analyze(Clause* conflict, std::vector<Literal>& to_learn, bool unsat
 	int counter=0;
 	int btLevel=0;
 	to_learn.push_back(p);//!< leave place for asserting literal
+
+#if PROVE
+	btree<Clause> tree;
+	std::vector<Clause> tmp;
+	Clause c_tmp=*conflict;
+	bool first=true;
+#endif
 
 	do{
 		clear(p_reason);
@@ -206,24 +216,24 @@ int Solver::analyze(Clause* conflict, std::vector<Literal>& to_learn, bool unsat
 				}
 			}
 		}
+#if PROVE
+		if(!first){
+		tmp.push_back(c_tmp);
+		tmp.push_back(c);
+		c_tmp=c_tmp&c;
+		}
+		first=false;
+#endif
+
 		do{
 			assert(trail.size()>0);
 			p = trail.back();
 			c = reason[p.val()];
-#if PROVE
-			if(c.size()==0) goto end;
-			resolution.push_back(c);
-			resolution.push_back(resolution[resolution.size()-2]&c);
-end:
-#endif
 			undoOne();
 		}while(!seen[p.index()]);
 		counter--;
 	}while(counter>0);
 	to_learn[0]=~p;
-#if PROVE
-	resolvents.push_back(resolution);
-#endif	
 	if(to_learn.size()==1) btLevel=0;
 	else{
 		int max_i=1;
@@ -235,6 +245,18 @@ end:
 		to_learn[1]=p;
 		btLevel=levels[p.index()];
 	}
+#if PROVE
+	int i=tmp.size()-1;
+	Clause empty=c_tmp;
+	
+	tree.addRdx(empty);
+	for(;i>=0;--i){
+		tree.insert(tmp[i-1], tmp[i]);
+		--i;
+	}
+	prove.push_back(tree);
+#endif
+
 	return btLevel;
 };
 
@@ -266,22 +288,16 @@ Literal Solver::select(){
 };
 
 bool Solver::CDCL(){
-	
-//	sussume(clauses);
-
-/*	for(auto x=clauses.begin();x!=clauses.end();++x){
-		if((*x)->size()>1)
-			attachWatcher(*x);
-	}
-	*/
-	
 	while(true){
 		Clause* conflict=propagate();
 		if(conflict!=nullptr){ //!< Exist a conflict
 			nConflicts++;
 			std::vector<Literal> to_learn;int btLevel;
-			if(decisionLevel()==root_level){ 
-				analyze(conflict, to_learn);return false;}
+			if(decisionLevel()==root_level){	
+#if PROVE
+				completeResolvs(conflict);
+#endif
+				return false;}
 			btLevel=analyze(conflict, to_learn);
 			backtrack(btLevel);
 			record(to_learn);
@@ -332,13 +348,9 @@ void Solver::cancel(){
 	trail_lim.pop_back();
 };
 
-void Solver::restart(){
-	nRestarts++;
-	backtrack(0);
-}
-
 int Solver::nAssigns(){
 	int counter=0;
+	#pragma omp parallel for
 	for(int i=1; i<assignments.size();++i){
 		if(assignments[i]!=U) counter++;
 	}
@@ -353,12 +365,20 @@ bool Solver::assume(Literal& p){
 
 void Solver::decayActivity(){
 	int i;int MAX=nLiterals;const float dc_factor=DECAY_FACTOR;
+	#pragma omp parallel for
 	for(i=-MAX;i<MAX+1;++i){
 		if(activity[i]<=0)continue;
 		activity[i]-=dc_factor;
 	}
 };
 
+void Solver::reward(Clause* c){
+	for(int i=0; i<c->size();++i){
+		activity[c->at(i).val()]+=BONUS;
+	}
+};
+
+//Method to verify
 #if ASSERT
 bool Solver::isSAT(){
 	for(int i=-nClauses;i<0;++i){
@@ -391,15 +411,7 @@ bool Solver::canBeSAT(){
 	}
 	return true;
 };
-#endif
 
-void Solver::reward(Clause* c){
-	for(int i=0; i<c->size();++i){
-		activity[c->at(i).val()]+=BONUS;
-	}
-};
-
-#if ASSERT
 void Solver::assertWatches(int index){
 	for(auto x : watches[index]){
 		int count=0;

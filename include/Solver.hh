@@ -11,7 +11,7 @@
 
 class Solver{
 	public:
-		friend class Clause;
+		friend class Clause; //!< Clause class can access member of Solver
 		Solver();
 		~Solver();
 
@@ -43,8 +43,11 @@ class Solver{
 		/**
 		 * Return the prove of unsat
 		 */
-		inline std::vector<std::vector<Clause> >& getProve(){return resolvents;};
+		inline std::vector<struct btree<Clause>>& getProve(){return prove;};
 
+		/**
+		 * Return the number of deleted clauses
+		 */
 		inline int getDeletedClause(){return deletedClauses;};
 
 		/**
@@ -77,61 +80,78 @@ class Solver{
 		 */
 		int nRestart(){return nRestarts;};
 
+		/**
+		 * Return the name of the current problem
+		 */
 		std::string pName(){return problemName;};
+		/**
+		 * Set the name of the problem
+		 */
 		void setName(std::string name){problemName=name;};
 
 	
 	private:
 		//!< Constants values
-		const int root_level=0;
-		const int luby_base=100;
-		std::string problemName;
-		int max_conflict=1;
-		int deletedClauses=0;
+		const int root_level=0; //!< root level definition. It must be 0.
+		const int luby_base=100; //!< luby base factor. 
+		std::string problemName; //!< problem name
+		int max_conflict=1; //!< max conflict before restart
+		int deletedClauses=0; //!< number of deleted clauses
 
-		int nRestarts=0;
-		int nConflicts=0;
-		int nPropagations=0;
-		int nDecisions=0;
+		int nRestarts=0; //!< number of restarts
+		int nConflicts=0; //!< number of conflicts
+		int nPropagations=0; //!< number of propagations
+		int nDecisions=0; //!< number of decisions
 
-		//!< Structure to get the counterexample
-		std::vector<std::vector<Clause> > resolvents;
+		std::vector<btree<Clause>> prove; //!< Structure to get the counterexample
 
-		bool initialized=false;
-		int nClauses;
-		int nLiterals;
-		//!< Default constraints
+		
+		bool initialized=false; //!< boolean variable to check if solver was initialized correctly
+		int nClauses; //!< number of clauses problem
+		int nLiterals; //!< number of literals problem
+
+		// Default constraints
 		std::vector<Clause*> clauses; //!< List of clauses.
 		std::vector<Clause*> learnts; //!< List of learnt clauses.
 
-		//!< Propagation constraints
+		// Propagation constraints
 		std::vector<Watcher>*  watches; //!< For each literal with a positive phase a list of clause to be watched if p changes value.
-		Clause* reason;
-		std::queue<Literal> propQ;
-		std::vector<Clause*>* undos;
+		Clause* reason; //!< reason vector
+		std::queue<Literal> propQ; //!< propagation queue
 
-		//!< Assignment values
+		// Assignment values
 		std::vector<lbool> assignments; //!< Assignment indexed by variable. Size of this is the number of vars.
 		std::vector<Literal> trail; //!< List of assignment in chronological order.
-		std::vector<int> trail_lim;
+		std::vector<int> trail_lim; //!< Current level spartition. Based on trail
 		std::vector<int> levels; //!< For each variable the level it belongs to.
+		
+		//!< Decay activities
+		float* activity;
 
+
+		/**
+		 * Internal clear method for vector
+		 */
 		template<class T>
 		inline void clear(std::vector<T>& origin){
 			std::vector<T> empty;
 			std::swap(origin, empty);
 		};
+
+		/**
+		 * Internal clear method for queue
+		 */
 		template<class T>
 		inline void clear(std::queue<T>& origin){
 			std::queue<T> empty;
 			std::swap(origin, empty);
 		};
-		template<class T>
-		inline void clear(std::set<T>& origin){
-			std::set<T> empty;
-			std::swap(origin, empty);
-		};
+
+//Method to verify
 #if ASSERT
+/**
+ * Check if watches at index i is consistent
+ */
 void assertWatches(int index);
 		
 /**
@@ -149,7 +169,7 @@ bool canBeSAT();
 		/**
 		 * Simplify the original set of variables
 		 */
-		void simplify(); //TODO
+		void simplify();
 
 		/**
 		 * Reduce the learnts clauses
@@ -214,10 +234,6 @@ bool canBeSAT();
 		 * Method used to backtrack
 		 */
 		void backtrack(int btLevel);
-		/**
-		 * Method to restart
-		 */
-		void restart();
 		
 		/**
 		 * Enqueue method to check if exist a conflict and if not insert into propagation queue next propagate literal, agiving asignement etc..
@@ -229,15 +245,7 @@ bool canBeSAT();
 		 */
 		void decayActivity();
 
-		//!< Decay activities
-		float* activity;
-
-		//private methods
-		/**
-		 * Here is define when the resolution analysis of conflict must end and the procedure can go on learn conflict.
-		 */
-		bool stop_criterion();
-		/**
+				/**
 		 * Method wich check if all variables are signed!
 		 */
 		bool isAllSigned();
@@ -256,6 +264,9 @@ bool canBeSAT();
 		 * Attach wathcer to watches
 		 */
 		void attachWatcher(Clause* clause);
+#if PROVE
+		void completeResolvs(Clause* conflict);
+#endif
 		/**
 		 * Sussume a set of clauses
 		 */
@@ -273,7 +284,6 @@ bool canBeSAT();
 				seq--;
 				x=x%size;
 			}
-		//	if(max_conflict!=(pow(y,seq)*luby_base)) 
 			max_conflict=(pow(y,seq))*luby_base;
 		};
 };
@@ -293,7 +303,6 @@ bool canBeSAT();
 	 */
 	inline bool Clause::propagate(Solver *solver, Literal* p){
 		if(deleted){
-			//std::cout<<"Found a deleted clause: "<<*this<<"\n";
 		       	return true;
 		}
 #if ASSERT
@@ -337,13 +346,12 @@ solver->assertWatches(p->val());
 		for(int i=((solver->value(p)==U)?0:1);i<size();++i) p_reason.push_back(~literals[i]);		
 	};
 
-	inline void Clause::undo(Solver* solver, Literal& p){
-		solver->watches[-p.val()].push_back(Watcher(this, p));
-	};
 
-	inline void Clause::simplify(Literal& l){
-		auto it=literals.begin();while(*it!=l)++it;
-		literals.erase(it);
+	inline bool Clause::satisfied(Solver* solver){
+		for(auto x : literals){
+			if(solver->value(x)==T) return true;
+		}
+		return false;
 	};
 
 	inline void Clause::detach(Solver* solver){
@@ -356,10 +364,4 @@ solver->assertWatches(p->val());
 
 	};
 
-	inline bool Clause::satisfied(Solver* solver){
-		for(auto x : literals){
-			if(solver->value(x)==T) return true;
-		}
-		return false;
-	};
 #endif

@@ -21,7 +21,7 @@ int main(int argc, char** argv){
 
 	int holes = atoi(argv[1]);
 
-	pigeonhole::fillWithPigeonhole(solver, holes);
+	pigeonhole::fillWithPigeonhole(&solver, holes);
 
 	tabular::printInit(&solver);
 	tabular::printLaunch(&solver);

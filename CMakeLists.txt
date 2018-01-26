@@ -37,5 +37,9 @@ if(CSV)
 	add_executable(CSV_test test/CSV.cc)
 	target_link_libraries(CSV_test SOLVER)
 endif()
+
+add_executable(SATIVA release/SATIVA.cc)
+target_link_libraries(SATIVA SOLVER)
+
 file (COPY "inputs" DESTINATION ".")
 
