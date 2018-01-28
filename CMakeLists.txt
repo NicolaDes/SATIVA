@@ -41,5 +41,5 @@ endif()
 add_executable(SATIVA release/SATIVA.cc)
 target_link_libraries(SATIVA SOLVER)
 
-file (COPY "inputs" DESTINATION ".")
+#file (COPY "inputs" DESTINATION ".")
 

@@ -20,8 +20,8 @@ int main(int argc, char** argv){
 	name+=argv[1];
 	solver.setName(name);	
 	int holes=atoi(argv[1]);
-	pigeonhole::fillWithPigeonhole(solver, holes);
-//	if(argc>1) Dimacs::fillFromFile(argv[1], solver);
+//	pigeonhole::fillWithPigeonhole(solver, holes);
+	if(argc>1) tabular::fillFromFile(argv[1], &solver);
 
 	tabular::printInit(&solver);
 	tabular::printLaunch(&solver);

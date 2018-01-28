@@ -40,7 +40,8 @@ int main(int argc, char** argv){
 }
 
 void launchOnFile(Solver* solver){
-	Dimacs::fillFromFile(options.filename, *solver);
+	tabular::fillFromFile(options.filename, solver);
+//	Dimacs::fillFromFile(options.filename, *solver);
 	tabular::printInit(solver);
 	tabular::printLaunch(solver);
 	bool res=solver->CDCL();

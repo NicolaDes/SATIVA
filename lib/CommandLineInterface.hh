@@ -1,5 +1,6 @@
-#ifndef COMMANDLINEINTERFACE_HH
+#ifndef COMMANDLINEINTERFACE_HH 
 #define COMMANDLINEINTERFACE_HH
+#include "Reader.hh"
 #include <iostream>
 #include "Config.h"
 #include "System.hh"
@@ -15,6 +16,7 @@ namespace tabular{
 	static clock_t clk;
 	static size_t mem;
 	static struct rusage rus;
+	static float parse_time;
 	void printInit(Solver* solver){
 		cout<<"\n\n";
 		int i=0;
@@ -48,6 +50,15 @@ namespace tabular{
 		cout<<"|-----------------------------------------------|\n";
 		cout<<"\t-> problem: "<<solver->pName()<<"\n";
 		cout<<"|-----------------------------------------------|\n";
+	};
+
+	void fillFromFile(char* filename, Solver* solver){
+		std::cout<<"\n";
+		clk=clock();
+		Dimacs::fillFromFile(filename, *solver);
+		clk=clock()-clk;
+		parse_time=clk;
+		std::cout<<"Parsing time: "<<(float)parse_time/CLOCKS_PER_SEC<<" s\n";
 	};
 
 	void printLaunch(Solver* solver){
@@ -155,7 +166,7 @@ namespace tabular{
 		clk=clock()-clk;
 		ofstream fout;
 		fout.open ("test.csv", std::ofstream::out | std::ofstream::app);
-		fout<<solver->pName()<<","<<solver->nL()<<","<<solver->nC()<<",=("<<clk<<")/"<<CLOCKS_PER_SEC<<","<<solver->nConflict()<<","<<solver->nLearnts()<<","<<solver->nDecision()<<","<<solver->nPropagation()<<","<<solver->getDeletedClause()<<","<<((sat)?"SAT":"UNSAT");
+		fout<<solver->pName()<<","<<solver->nL()<<","<<solver->nC()<<",=("<<parse_time<<")/"<<CLOCKS_PER_SEC<<",=("<<clk<<")/"<<CLOCKS_PER_SEC<<","<<solver->nConflict()<<","<<solver->nLearnts()<<","<<solver->nDecision()<<","<<solver->nPropagation()<<","<<solver->getDeletedClause()<<","<<((sat)?"SAT":"UNSAT");
 		fout<<",";
 		fout<<system_util::memUsedPeak()<<"\n";
 		fout.close();
