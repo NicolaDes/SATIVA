@@ -1,6 +1,7 @@
 #include "Solver.hh"
 
 void Solver::init(int nL, int nC){
+	percentage=0.0;
 	watches= new std::vector<Watcher>[(2*nL)+1];
 	watches=watches+nL;
 	reason= new Clause[(2*nL)+1];
@@ -287,10 +288,26 @@ Literal Solver::select(){
 	return branch_variable;
 };
 
+void Solver::reset_scores(){
+	for(int i=-nLiterals;i<nLiterals;++i){
+		activity[i]=0;
+	}
+};
+
 bool Solver::CDCL(){
 	while(true){
+#if VERBOSE
+		printf("[");
+		int i=0;	
+		for(;i<=(int)((percentage*4)*41);++i)printf("=");
+		printf(">");
+		for(;i<=41;++i)printf(" ");
+		printf("%3d%%]\r",(int)((percentage*4)*100));
+#endif
 		Clause* conflict=propagate();
 		if(conflict!=nullptr){ //!< Exist a conflict
+#if VERBOSE
+#endif
 			nConflicts++;
 			std::vector<Literal> to_learn;int btLevel;
 			if(decisionLevel()==root_level){	
@@ -301,12 +318,17 @@ bool Solver::CDCL(){
 			btLevel=analyze(conflict, to_learn);
 			backtrack(btLevel);
 			record(to_learn);
-			decayActivity();
 		}else{
 #if ASSERT
 			assert(canBeSAT());
 #endif
-			if(decisionLevel()==0) simplify();
+			if(decisionLevel()==0){
+				simplify();
+				decayActivity();
+#if VERBOSE
+				percentage=((float)nAssigns())/((float)nLiterals);
+#endif
+			}
 			if(learnts.size()-nAssigns()>=learnts.size()) reduceLearnts();
 			if(nAssigns()==nLiterals) return true;
 			else if(nConflicts>max_conflict) {
@@ -335,9 +357,6 @@ void Solver::simplify(){
 			x->del();
 		}
 	}
-#if VERBOSE
-	if(deletedClauses-tmp>0) std::cout<<"Deleted clauses: "<<deletedClauses-tmp<<", limits: "<<max_conflict<<"\n";
-#endif
 };
 
 void Solver::reduceLearnts(){};

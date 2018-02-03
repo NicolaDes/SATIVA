@@ -20,6 +20,10 @@ void launchOnPig(Solver* solver);
 
 int main(int argc, char** argv){
 	
+
+#if VERBOSE
+	system("setterm -cursor off");
+#endif
 	for(int i=1; i<argc;++i){
 		if(argv[i][0]=='-'){
 			if(argv[i][1]=='f') options.filename=argv[i+1];
@@ -35,7 +39,9 @@ int main(int argc, char** argv){
 		launchOnPig(&solver);
 	}else
 		printUsage(argv);
-
+#if VERBOSE
+	system("setterm -cursor on");
+#endif
 	return 0;
 }
 

@@ -103,6 +103,8 @@ class Solver{
 		int nPropagations=0; //!< number of propagations
 		int nDecisions=0; //!< number of decisions
 
+		int best_var;
+
 		std::vector<btree<Clause>> prove; //!< Structure to get the counterexample
 
 		
@@ -127,6 +129,7 @@ class Solver{
 		
 		//!< Decay activities
 		float* activity;
+		float percentage;
 
 
 		/**
@@ -160,6 +163,8 @@ void assertWatches(int index);
 bool canBeSAT();
 
 #endif
+
+		void reset_scores();
 
 		/**
 		 * Select new variable

@@ -106,6 +106,7 @@ namespace tabular{
 			node<Clause>* curr=prove.begin();
 			while(!prove.ended(curr)){
 				std::cout<<curr->left->key_value<<"&"<<curr->right->key_value<<"="<<curr->key_value<<"\n";
+//				if(curr->key_value.size()>0) break;
 				curr=curr->next();
 			}
 		}
@@ -136,6 +137,7 @@ namespace tabular{
 			while(!prove.ended(curr)){
 				fout<<"\""<<curr->left->key_value<<"\" -> "<<"\""<<curr->key_value<<"\";\n";
 				fout<<"\""<<curr->right->key_value<<"\" -> "<<"\""<<curr->key_value<<"\";\n";
+//				if(curr->key_value.size()>0) break;
 				curr=curr->next();
 			}
 		}
