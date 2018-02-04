@@ -70,14 +70,8 @@ void launchOnFile(Solver* solver){
 	}
 	tabular::printEnd();
 };
-
 void launchOnPig(Solver* solver){
-	std::string name="pigeonhole ";
-	name+=std::to_string(options.pigeonhole);
-	solver->setName(name);
-
-	pigeonhole::fillWithPigeonhole(solver, options.pigeonhole);
-
+	tabular::fillFromPig(solver, options.pigeonhole);
 	tabular::printInit(solver);
 	tabular::printLaunch(solver);
 	bool res = solver->CDCL();
@@ -89,7 +83,6 @@ void launchOnPig(Solver* solver){
 	tabular::printEnd();
 
 };
-
 
 void printUsage(char** argv){
 	std::cout<<"\nUsage :\n";

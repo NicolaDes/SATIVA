@@ -1,6 +1,7 @@
 #ifndef COMMANDLINEINTERFACE_HH 
 #define COMMANDLINEINTERFACE_HH
 #include "Reader.hh"
+#include "Pigeonhole.hh"
 #include <iostream>
 #include "Config.h"
 #include "System.hh"
@@ -59,6 +60,22 @@ namespace tabular{
 		parse_time=clk;
 		std::cout<<"Parsing time: "<<(float)parse_time/CLOCKS_PER_SEC<<" s\n";
 	};
+
+	void fillFromPig(Solver* solver, int pigeonhole){
+		std::string name="pigeonhole ";
+		name+=std::to_string(pigeonhole);
+		solver->setName(name);
+
+		std::cout<<"\n";
+		clk=clock();
+		pigeonhole::fillWithPigeonhole(solver,pigeonhole);
+		clk=clock()-clk;
+		parse_time=clk;
+		std::cout<<"Parsing time: "<<(float)parse_time/CLOCKS_PER_SEC<<" s\n";
+
+
+	};
+
 
 	void printLaunch(Solver* solver){
 		cout<<"|--------- Launching CDCL procedure ------------|\n";
@@ -147,6 +164,9 @@ namespace tabular{
 		cout<<"|><>><>><>><>><>><>><>><>><>><>><>><>><>><>><>>>|\n";
 		cout<<"\n\n";
 	};
+	
+
+
 
 	void generateCSV(Solver* solver, bool sat){
 		clk=clock()-clk;
