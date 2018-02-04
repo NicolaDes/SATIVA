@@ -6,16 +6,27 @@
 #include "Pigeonhole.hh"
 #include <iostream>
 #include <time.h>
-//#include "System.hh"
+#include <signal.h>
 
 struct PARAMS{
 	char* filename=nullptr;
 	int pigeonhole=-1;
 }options;
 
+Solver s;
+
 void printUsage(char** argv);
 void launchOnFile(Solver* solver);
 void launchOnPig(Solver* solver);
+static void exit_sig(int signum){
+	printf("\nInterrupted by user\n");
+	tabular::printUsage(&s);
+	tabular::printEnd();
+#if VERBOSE
+	system("setterm -cursor on");
+#endif
+	exit(-1);
+}
 
 
 int main(int argc, char** argv){
@@ -24,6 +35,9 @@ int main(int argc, char** argv){
 #if VERBOSE
 	system("setterm -cursor off");
 #endif
+
+	signal(SIGINT, exit_sig);
+
 	for(int i=1; i<argc;++i){
 		if(argv[i][0]=='-'){
 			if(argv[i][1]=='f') options.filename=argv[i+1];
@@ -32,11 +46,9 @@ int main(int argc, char** argv){
 	}
 	
 	if(options.filename!=nullptr){
-		Solver solver;
-		launchOnFile(&solver);
+		launchOnFile(&s);
 	}else if(options.pigeonhole>0){
-		Solver solver;
-		launchOnPig(&solver);
+		launchOnPig(&s);
 	}else
 		printUsage(argv);
 #if VERBOSE

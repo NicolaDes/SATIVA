@@ -123,9 +123,9 @@
 		 */
 		friend bool operator <(const Clause& c1, const Clause& c2) {
 			if(c1.size()==c2.size())return false;
-			for(int i=0; i<c1.size();++i){
+			for(size_t i=0; i<c1.size();++i){
 				bool found=false;
-				for(int j=0; j<c2.size();++j){
+				for(size_t j=0; j<c2.size();++j){
 					if(c1.literals[i]==c2.literals[j]){found=true;break;}
 				}
 				if(!found)return false;
@@ -139,9 +139,9 @@
 		friend std::ostream & operator <<(std::ostream &os, const Clause &c){os<<("( ");for(auto x=c.literals.begin();x!=c.literals.end();){os<<*x;if(++x!=c.literals.end())os<<" v ";};os<<" )";return os;};
 		bool operator ==(Clause c){
 			if(c.size()!=size()) return false;
-			int found=0;
-			for(int i=0; i<size();++i){
-				for(int j=0; j<c.size();++j){
+			size_t found=0;
+			for(size_t i=0; i<size();++i){
+				for(size_t j=0; j<c.size();++j){
 					if(c[i]==this->at(j)) found++;
 				}
 			}
@@ -151,13 +151,13 @@
 		inline Clause operator &(Clause c){
 			std::set<Literal> resolv_set(literals.begin(), literals.end());
 			Clause resolv;
-			for(int i=0;i<c.size();++i)resolv_set.insert(c[i]);
+			for(size_t i=0;i<c.size();++i)resolv_set.insert(c[i]);
 			for(auto it = resolv_set.begin();it!=resolv_set.end();++it){
 				if(resolv_set.find(~(*it))==resolv_set.end()) resolv.addLiteral(*it);
 			}
 			return resolv;
 		};
-		int size() const {return literals.size();};
+		size_t size() const {return literals.size();};
 			
 	};
 

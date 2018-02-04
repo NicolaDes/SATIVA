@@ -36,8 +36,17 @@ namespace Dimacs{
 		int val;
 		int i=0;
 		std::vector<Literal> lits_val;
+#if VERBOSE
+		float percentage=0;
+#endif
 
 		while(true){
+#if VERBOSE
+			percentage=(float)i/(float)nC;
+			printf("[ Reading... ");
+			printf("%3d %% ]\r",(int)((percentage)*100));
+#endif
+
 			int ret=fscanf(fp, "%i", &val);
 			if(ret==EOF) break;
 			if(val!=0){

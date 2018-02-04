@@ -115,6 +115,7 @@ class Solver{
 		// Default constraints
 		std::vector<Clause*> clauses; //!< List of clauses.
 		std::vector<Clause*> learnts; //!< List of learnt clauses.
+		std::vector<Clause*>* indexClauses;
 
 		// Propagation constraints
 		std::vector<Watcher>*  watches; //!< For each literal with a positive phase a list of clause to be watched if p changes value.
@@ -169,7 +170,7 @@ bool canBeSAT();
 		/**
 		 * Select new variable
 		 */
-		Literal select();
+		int select();
 
 		/**
 		 * Simplify the original set of variables
@@ -328,7 +329,7 @@ solver->assertWatches(p->val());
 #endif
 			return true;
 		}
-		for(int i=2; i<size();++i){
+		for(size_t i=2; i<size();++i){
 			if(solver->value(literals[i])!=F){
 				literals[1]=literals[i];literals[i]=~*p;
 				solver->watches[-literals[1].val()].push_back(Watcher(this,literals[1]));
@@ -348,7 +349,7 @@ solver->assertWatches(p->val());
 
 	inline void Clause::calcReason(Solver* solver, Literal& p, std::vector<Literal>& p_reason){
 		assert(solver->value(p)==U||literals[0]==p);
-		for(int i=((solver->value(p)==U)?0:1);i<size();++i) p_reason.push_back(~literals[i]);		
+		for(size_t i=((solver->value(p)==U)?0:1);i<size();++i) p_reason.push_back(~literals[i]);		
 	};
 
 

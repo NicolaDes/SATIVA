@@ -1,6 +1,10 @@
 cmake_minimum_required (VERSION 2.8.12.2)
 
 set (PROJECT"CDCL")
+#########################
+# default configuration #
+set(VERBOSE 1)
+#########################
 
 project (${PROJECT} CXX)
 
@@ -14,6 +18,8 @@ configure_file (
 	)
 
 include (cmake_files/libraries.cmake)
+
+set (CMAKE_CXX_FLAGS "-O2 -Wall")
 
 include_directories(include)
 add_subdirectory (src)
@@ -41,5 +47,6 @@ endif()
 add_executable(SATIVA release/SATIVA.cc)
 target_link_libraries(SATIVA SOLVER)
 
-#file (COPY "inputs" DESTINATION ".")
-
+add_custom_target (inputs
+	ln -s ../inputs .
+	)

@@ -14,7 +14,6 @@
 namespace tabular{
 	using namespace std;
 	static clock_t clk;
-	static size_t mem;
 	static struct rusage rus;
 	static float parse_time;
 	void printInit(Solver* solver){
@@ -69,18 +68,8 @@ namespace tabular{
 	void clear(){
 		for(int i=0;i<100;++i)cout<<"\n";
 	};
-	void printModel(Solver* solver){
-		getrusage(RUSAGE_SELF, &rus);
-		clk=clock()-clk;
-		std::vector<lbool> model=solver->getModel();
-		cout<<"|                     SAT                       |\n";
-
-		cout<<"|-----------------------------------------------|\n";
-		cout<<"|-------------------< MODEL >-------------------|\n";
-		cout<<"{ ";
-		for(int i=0; i<model.size();++i){if(model[i]!=U) std::cout<<((model[i]==T)?"x_":"-x_")<<i<<"; ";};
-		cout<<"}\n";
-
+	void printUsage(Solver* solver=nullptr){
+		if(solver!=nullptr){
 		cout<<"|===============================================|\n\n";
 		cout<<"        Memory usage: ";
 		cout<<system_util::memUsedPeak()<<" MB\n";
@@ -90,12 +79,26 @@ namespace tabular{
 		cout<<"        Decisions: "<<solver->nDecision()<<"\n";
 		cout<<"        Propagations: "<<solver->nPropagation()<<"\n";
 
+		}
+		
+	};
+	void printModel(Solver* solver){
+		getrusage(RUSAGE_SELF, &rus);
+		clk=clock()-clk;
+		std::vector<lbool> model=solver->getModel();
+		cout<<"|                     SAT                       |\n";
+
+		cout<<"|-----------------------------------------------|\n";
+		cout<<"|-------------------< MODEL >-------------------|\n";
+		cout<<"{ ";
+		for(size_t i=0; i<model.size();++i){if(model[i]!=U) std::cout<<((model[i]==T)?"x_":"-x_")<<i<<"; ";};
+		cout<<"}\n";
+		printUsage(solver);
 	};
 	
 	void printProve(Solver* solver){
 		getrusage(RUSAGE_SELF, &rus);
 		clk=clock()-clk;
-		double mem_used=system_util::memUsedPeak();
 		std::vector<lbool> model=solver->getModel();
 		cout<<"|                     UNSAT                     |\n";
 		cout<<"|-----------------------------------------------|\n";
@@ -111,20 +114,11 @@ namespace tabular{
 			}
 		}
 #endif
-		cout<<"|===============================================|\n\n";
-		cout<<"        Memory usage: ";
-		cout<<system_util::memUsedPeak()<<" MB\n";
-		cout<<"        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" sec\n";
-		cout<<"        Learnt clauses: "<<solver->nLearnts()<<"\n";
-		cout<<"        #Restarts: "<<solver->nRestart()<<"\n";
-		cout<<"        Decisions: "<<solver->nDecision()<<"\n";
-		cout<<"        Propagations: "<<solver->nPropagation()<<"\n";
-		cout<<"        Deleted clauses: "<<solver->getDeletedClause()<<"\n";
+		printUsage(solver);
 	};
 
 	void generateGV(Solver* solver){
 		clk=clock()-clk;
-		double mem_used=system_util::memUsedPeak();
 		cout<<"|                     UNSAT                     |\n";
 		cout<<"|-----------------------------------------------|\n";
 #if PROVE
@@ -145,17 +139,7 @@ namespace tabular{
 
 		fout.close();
 #endif
-		cout<<"|===============================================|\n\n";
-		cout<<"        Memory usage: ";
-		cout<<system_util::memUsedPeak()<<" MB\n";
-		cout<<"        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" sec\n";
-		cout<<"        Learnt clauses: "<<solver->nLearnts()<<"\n";
-		cout<<"        Conflict clauses: "<<solver->nConflict()<<"\n";
-		cout<<"        #Restarts: "<<solver->nRestart()<<"\n";
-		cout<<"        Decisions: "<<solver->nDecision()<<"\n";
-		cout<<"        Propagations: "<<solver->nPropagation()<<"\n";
-		cout<<"        Deleted clauses: "<<solver->getDeletedClause()<<"\n";
-
+		printUsage(solver);
 	};
 
 	void printEnd(){

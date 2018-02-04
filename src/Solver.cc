@@ -4,9 +4,11 @@ void Solver::init(int nL, int nC){
 	percentage=0.0;
 	watches= new std::vector<Watcher>[(2*nL)+1];
 	watches=watches+nL;
+	indexClauses= new std::vector<Clause*>[(2*nL)+1];
+	indexClauses=indexClauses+nL;
 	reason= new Clause[(2*nL)+1];
 	reason=reason+nL;
-	assignments.resize(nL+1, lbool(U));
+	assignments.resize(nL+1, U);
 	levels.resize(nL+1, 0);
 	nLiterals=nL;nClauses=nC;
 	activity = new float[(2*nL)+1];	
@@ -34,7 +36,6 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 			assert(value(lits_val[i])==F);
 		}
 #endif
-		int learnt_size=learnts.size();
 		learnts.push_back(new Clause);
 		for(auto x : lits_val){
 			learnts.back()->addLiteral(x);
@@ -53,14 +54,32 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 		clauses.push_back(new Clause);
 		for(auto x : lits_val){
 			clauses.back()->addLiteral(x);
+			indexClauses[x.val()].push_back(clauses.back());
 			activity[x.val()]++;
 		}
 		if(size==1){
 			enqueue(lits_val[0]);
 			return;
 		}
+
 		Clause* c = clauses.back();
 		//check if new clause sussumes others
+		for(size_t i=0; i<c->size();++i){
+			int x = c->at(i).val();
+			for(unsigned int i=0; i<indexClauses[x].size();++i){
+				if(!c->isDel()&&indexClauses[x][i]->isDel()){
+					if(*indexClauses[x][i]<*c){
+						deletedClauses++;
+						c->del();
+						break;
+					}else if(*c<*indexClauses[x][i]){
+						deletedClauses++;
+						indexClauses[x][i]->del();
+					}
+				}
+			}
+		}
+		/*
 		for(int i=0; i<clauses.size();++i){
 
 			if(!c->isDel()&&clauses[i]->isDel()){
@@ -74,6 +93,7 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 				}
 			}
 		}
+		*/
 
 		for(auto x : clauses){
 			if(x->satisfied(this)&&!x->isDel()){
@@ -101,10 +121,12 @@ Solver::~Solver(){
 	delete [] watches;
 	reason=reason-nLiterals;
 	delete [] reason;
+	indexClauses=indexClauses-nLiterals;
+	delete [] indexClauses;
 	activity=activity-nLiterals;
 	delete [] activity;
-	for(int i=0; i<learnts.size();i++) delete learnts[i];
-	for(int i=0; i<clauses.size();i++) delete clauses[i];
+	for(size_t i=0; i<learnts.size();i++) delete learnts[i];
+	for(size_t i=0; i<clauses.size();i++) delete clauses[i];
 };
 
 Clause* Solver::propagate(){
@@ -114,7 +136,6 @@ Clause* Solver::propagate(){
 		propQ.pop();
 		bool not_conflict=true;
 		int p_index=p.val();
-		int size=watches[p_index].size();
 		std::vector<Watcher> tmp=watches[p_index];
 		clear(watches[p_index]);
 		for(auto x = tmp.begin();x!=tmp.end();++x){
@@ -206,7 +227,7 @@ int Solver::analyze(Clause* conflict, std::vector<Literal>& to_learn, bool unsat
 	do{
 		clear(p_reason);
 		c.calcReason(this, p, p_reason);
-		for(int i=0; i<p_reason.size();++i){
+		for(size_t i=0; i<p_reason.size();++i){
 			Literal q = p_reason[i];
 			if(!seen[q.index()]){
 				seen[q.index()]=true;
@@ -238,7 +259,7 @@ int Solver::analyze(Clause* conflict, std::vector<Literal>& to_learn, bool unsat
 	if(to_learn.size()==1) btLevel=0;
 	else{
 		int max_i=1;
-		for(int i=2;i<to_learn.size();i++){
+		for(size_t i=2;i<to_learn.size();i++){
 			if(levels[to_learn[i].index()]>levels[to_learn[max_i].index()])max_i=i;
 		}
 		Literal p=to_learn[max_i];
@@ -274,7 +295,7 @@ void Solver::undoOne(){
 	trail.pop_back();
 };
 
-Literal Solver::select(){
+int Solver::select(){
 	int max_so_far=-10;
 	var x = 0;
 	for(int i=-nLiterals;i<nLiterals+1;++i){
@@ -284,8 +305,7 @@ Literal Solver::select(){
 			max_so_far=activity[i];
 		}
 	}
-	Literal branch_variable(x);
-	return branch_variable;
+	return x;
 };
 
 void Solver::reset_scores(){
@@ -297,12 +317,14 @@ void Solver::reset_scores(){
 bool Solver::CDCL(){
 	while(true){
 #if VERBOSE
+		if(percentage*4*100<=100){
 		printf("[");
 		int i=0;	
 		for(;i<=(int)((percentage*4)*41);++i)printf("=");
 		printf(">");
 		for(;i<=41;++i)printf(" ");
 		printf("%3d%%]\r",(int)((percentage*4)*100));
+		}
 #endif
 		Clause* conflict=propagate();
 		if(conflict!=nullptr){ //!< Exist a conflict
@@ -337,8 +359,8 @@ bool Solver::CDCL(){
 				lubyActivity();
 			}
 			else{
-				Literal p = select();
-				assume(p);
+				Literal branching_literal(select());
+				assume(branching_literal);
 			}
 		}
 	};
@@ -350,7 +372,6 @@ void Solver::backtrack(int btLevel){
 };
 
 void Solver::simplify(){
-	int tmp=deletedClauses;
 	for(auto x:clauses){
 		if(x->satisfied(this)&&!x->isDel()){
 			deletedClauses++;
@@ -370,7 +391,7 @@ void Solver::cancel(){
 int Solver::nAssigns(){
 	int counter=0;
 	#pragma omp parallel for
-	for(int i=1; i<assignments.size();++i){
+	for(size_t i=1; i<assignments.size();++i){
 		if(assignments[i]!=U) counter++;
 	}
 	return counter;
@@ -392,7 +413,7 @@ void Solver::decayActivity(){
 };
 
 void Solver::reward(Clause* c){
-	for(int i=0; i<c->size();++i){
+	for(size_t i=0; i<c->size();++i){
 		activity[c->at(i).val()]+=BONUS;
 	}
 };

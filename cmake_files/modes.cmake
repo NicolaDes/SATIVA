@@ -13,7 +13,7 @@ else()
 endif()
 if(P)
 	message (Inserted binary location for graphics: ${GNUPLOT})
-	file (COPY "graphics" DESTINATION ".")
+	file (MAKE_DIRECTORY "build/graphics")
 	add_custom_target(graphviz
 		dot -Tpng graphics/prove.gv -o graphics/prove.png
 		)
