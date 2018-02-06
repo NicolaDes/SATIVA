@@ -2,7 +2,12 @@ if [ ! -d "build" ]; then
 	mkdir build
 fi
 cd build
-cmake ..
+if [ "$1" ==  "proof" ]; then
+	cmake .. -DP=1
+else
+	cmake ..
+fi
+
 if [ -d "inputs" ]; then
 	echo "Inputs link already exist!"
 else
