@@ -1,0 +1,7 @@
+set (LUBY_MODE 1)
+set (COSTANT_MODE 0)
+set (VERIFICA_ON 0)
+set (VERBOSE_ON 1)
+set (GRAPHICS_VAL 0)
+set (PROVE_ON  0)
+set (MAX_CONF 0)

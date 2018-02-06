@@ -1,9 +1,26 @@
+/*    VERSION SATIVA */
 #define VERSION @CURRENT_VERSION@
+
+/////////////////////////////
+//////////FUNCTION///////////
+/////////////////////////////
 #define MAX(a, b) ((a>b)?a:b)
+
+/////////////////////////////
+///////////PARAMS///////////
+/////////////////////////////
 #define DECAY_FACTOR @DECAY_VAL@
-#define GRAPHICS @GRAPHICS_VAL@
-#define VERBOSE @VERBOSE_ON@
 #define BONUS @BONUS_VAL@
-#define ASSERT @VERIFICA_ON@
-#define PROVE @PROVE_ON@
 #define LUBY_BASE @LUBY_BASE_VAL@
+#define LUBY_INCR @LUBY_INCR_VAL@
+#define MAX_CONF @MAX_CONF_VAL@
+
+/////////////////////////////
+////////////MODE/////////////
+/////////////////////////////
+#define LUBY @LUBY_MODE@
+#define COSTANT @COSTANT_MODE@
+#define ASSERT @VERIFICA_ON@
+#define VERBOSE @VERBOSE_ON@
+#define GRAPHICS @GRAPHICS_VAL@
+#define PROVE @PROVE_ON@

@@ -93,7 +93,6 @@ class Solver{
 	private:
 		//!< Constants values
 		const int root_level=0; //!< root level definition. It must be 0.
-		const int luby_base=100; //!< luby base factor. 
 		std::string problemName; //!< problem name
 		int max_conflict=1; //!< max conflict before restart
 		int deletedClauses=0; //!< number of deleted clauses
@@ -236,6 +235,8 @@ bool canBeSAT();
 		 */
 		int analyze(Clause* conflict, std::vector<Literal>& to_learn, bool unsat=false);
 
+		int myAnalyze(Clause* conflict, std::vector<Literal>& to_learn);
+
 		/**
 		 * Method used to backtrack
 		 */
@@ -256,11 +257,6 @@ bool canBeSAT();
 		 */
 		bool isAllSigned();
 
-		/**
-		 * Method to find 1UIP in implication graph
-		 * @warning This method modifies the conflict!!
-		 */
-		void firstUIP();
 
 		/**
 		 * Record a learnt clause
@@ -277,12 +273,13 @@ bool canBeSAT();
 		 * Sussume a set of clauses
 		 */
 		void sussume(Clause& c);
+#if LUBY
 		/**
 		 * Luby activity
 		 * It receive the increment value in y and the current number of conflict and stores the new luby sequence on max_conflict
 		 */
 		inline void lubyActivity(){
-			int y=2;int x=nRestarts;
+			int x=nRestarts;
 			int size, seq;
 			for(size=1,seq=0;size<x+1;seq++,size=2*size+1);
 			while(size-1!=x){
@@ -290,8 +287,9 @@ bool canBeSAT();
 				seq--;
 				x=x%size;
 			}
-			max_conflict=(pow(y,seq))*luby_base;
+			max_conflict=(pow(LUBY_BASE,seq))*LUBY_INCR;
 		};
+#endif
 };
 
 //functions prototypes

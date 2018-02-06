@@ -6,6 +6,7 @@ set (PROJECT"CDCL")
 set(VERBOSE 1)
 #########################
 
+include (cmake_files/default.cmake)
 project (${PROJECT} CXX)
 
 set (CURRENT_VERSION 1.0)
@@ -19,7 +20,7 @@ configure_file (
 
 include (cmake_files/libraries.cmake)
 
-set (CMAKE_CXX_FLAGS "-O2 -Wall")
+set (CMAKE_CXX_FLAGS )
 
 include_directories(include)
 add_subdirectory (src)

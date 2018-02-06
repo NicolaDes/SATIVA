@@ -174,10 +174,10 @@ bool Solver::enqueue(Literal p, Clause* c){
 			assert(c->size()>0);
 		if(c!=nullptr){
 			reason[p.val()]=*c;
-		}else{
+		}/*else{
 			Clause unit_c;unit_c.addLiteral(p);
 			reason[p.val()]=unit_c;
-		}
+		}*/
 		trail.push_back(p);
 		propQ.push(p);
 		return true;
@@ -356,7 +356,9 @@ bool Solver::CDCL(){
 			else if(nConflicts>max_conflict) {
 				nRestarts++;
 				backtrack(root_level);
+#if LUBY
 				lubyActivity();
+#endif
 			}
 			else{
 				Literal branching_literal(select());
@@ -372,12 +374,22 @@ void Solver::backtrack(int btLevel){
 };
 
 void Solver::simplify(){
+	for(auto x : trail){
+		for(auto c : indexClauses[x.val()]){
+			if(c->satisfied(this)&&!c->isDel()){
+				deletedClauses++;
+				c->del();
+			}
+		}
+	}
+	/*
 	for(auto x:clauses){
 		if(x->satisfied(this)&&!x->isDel()){
 			deletedClauses++;
 			x->del();
 		}
 	}
+	*/
 };
 
 void Solver::reduceLearnts(){};
