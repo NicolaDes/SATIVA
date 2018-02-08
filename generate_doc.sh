@@ -4,4 +4,8 @@ fi
 echo "Generating doxygen in docs..."
 doxygen Doxygen.cfg 
 echo "Ended generation!"
-firefox docs/html/index.html
+if ! type firefoxs > /dev/null; then
+	echo  -e "\e[31mFirefox not installed! open < docs/html/index.html > with your browser\e[39m"
+else
+	firefox docs/html/index.html
+fi
