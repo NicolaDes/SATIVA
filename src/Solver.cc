@@ -2,7 +2,7 @@
 
 void Solver::init(int nL, int nC){
 	percentage=0.0;
-	watches= new std::vector<Watcher>[(2*nL)+1];
+	watches= new std::vector<Clause*>[(2*nL)+1];
 	watches=watches+nL;
 	indexClauses= new std::vector<Clause*>[(2*nL)+1];
 	indexClauses=indexClauses+nL;
@@ -106,8 +106,8 @@ void Solver::newClause(std::vector<Literal>& lits_val, bool learnt){
 }
 
 void Solver::attachWatcher(Clause* clause){
-	watches[-clause->at(0).val()].push_back(Watcher(clause, clause->at(0)));
-	watches[-clause->at(1).val()].push_back(Watcher(clause, clause->at(1)));
+	watches[-clause->at(0).val()].push_back(clause);
+	watches[-clause->at(1).val()].push_back(clause);
 #if ASSERT
 assertWatches(-clause->at(0).val());
 assertWatches(-clause->at(1).val());
@@ -136,10 +136,10 @@ Clause* Solver::propagate(){
 		propQ.pop();
 		bool not_conflict=true;
 		int p_index=p.val();
-		std::vector<Watcher> tmp=watches[p_index];
+		std::vector<Clause*> tmp=watches[p_index];
 		clear(watches[p_index]);
 		for(auto x = tmp.begin();x!=tmp.end();++x){
-			not_conflict=x->propagate(this, &p);
+			not_conflict=(*x)->propagate(this, &p);
 			if(!not_conflict){
 				//clear propQ
 				clear(propQ);
@@ -149,7 +149,7 @@ Clause* Solver::propagate(){
 				for(;x!=tmp.end();++x){
 				       	watches[p_index].push_back(*x);
 				}
-				return i->cref;
+				return *i;
 			}
 		}
 	}       
@@ -344,15 +344,16 @@ bool Solver::CDCL(){
 #if ASSERT
 			assert(canBeSAT());
 #endif
+			unsigned int assigned=nAssigns();
 			if(decisionLevel()==0){
 				simplify();
 				decayActivity();
 #if VERBOSE
-				percentage=((float)nAssigns())/((float)nLiterals);
+				percentage=((float)assigned)/((float)nLiterals);
 #endif
 			}
-			if(learnts.size()-nAssigns()>=learnts.size()) reduceLearnts();
-			if(nAssigns()==nLiterals) return true;
+			if(learnts.size()-assigned>=learnts.size()) reduceLearnts();
+			if(assigned==nLiterals) return true;
 			else if(nConflicts>max_conflict) {
 				nRestarts++;
 				backtrack(root_level);
@@ -400,8 +401,8 @@ void Solver::cancel(){
 	trail_lim.pop_back();
 };
 
-int Solver::nAssigns(){
-	int counter=0;
+unsigned int Solver::nAssigns(){
+	unsigned int counter=0;
 	#pragma omp parallel for
 	for(size_t i=1; i<assignments.size();++i){
 		if(assignments[i]!=U) counter++;

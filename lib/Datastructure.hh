@@ -161,14 +161,6 @@
 			
 	};
 
-	struct Watcher{
-		Clause* cref;
-		Literal blocker;
-		Watcher(Clause* _cref, Literal _blocker) : cref(_cref), blocker(_blocker){};
-		inline bool propagate(Solver* s, Literal* p){return cref->propagate(s, p);};
-		inline bool operator ==(const Watcher& w){return (*cref==*w.cref&&w.blocker==blocker);};
-	};
-
 	template<class T>
 	struct node{
 		T key_value;

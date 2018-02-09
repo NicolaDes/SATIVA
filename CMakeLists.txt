@@ -45,8 +45,8 @@ if(CSV)
 	target_link_libraries(CSV_test SOLVER)
 endif()
 
-add_executable(SATIVA release/SATIVA.cc)
-target_link_libraries(SATIVA SOLVER)
+add_executable(sativa release/SATIVA.cc)
+target_link_libraries(sativa SOLVER)
 
 add_custom_target (inputs
 	ln -s ../inputs .

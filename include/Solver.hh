@@ -117,7 +117,7 @@ class Solver{
 		std::vector<Clause*>* indexClauses;
 
 		// Propagation constraints
-		std::vector<Watcher>*  watches; //!< For each literal with a positive phase a list of clause to be watched if p changes value.
+		std::vector<Clause*>*  watches; //!< For each literal with a positive phase a list of clause to be watched if p changes value.
 		Clause* reason; //!< reason vector
 		std::queue<Literal> propQ; //!< propagation queue
 
@@ -228,7 +228,7 @@ bool canBeSAT();
 		/**
 		 * Return the number of assigned variable
 		 */
-		int nAssigns();
+		unsigned int nAssigns();
 
 		/**
 		 * Method used to analyze the conflict
@@ -321,7 +321,7 @@ bool canBeSAT();
 		assert(literals[1]==~*p); //!< l2 = F
 		
 		if(solver->value(literals[0])==T){
-			solver->watches[p->val()].push_back(Watcher(this, *p));
+			solver->watches[p->val()].push_back(this);
 #if ASSERT
 solver->assertWatches(p->val());
 #endif
@@ -330,7 +330,7 @@ solver->assertWatches(p->val());
 		for(size_t i=2; i<size();++i){
 			if(solver->value(literals[i])!=F){
 				literals[1]=literals[i];literals[i]=~*p;
-				solver->watches[-literals[1].val()].push_back(Watcher(this,literals[1]));
+				solver->watches[-literals[1].val()].push_back(this);
 #if ASSERT
 solver->assertWatches(-literals[1].val());
 #endif
@@ -338,7 +338,7 @@ solver->assertWatches(-literals[1].val());
 			}
 		}
 		
-		solver->watches[p->val()].push_back(Watcher(this, *p));
+		solver->watches[p->val()].push_back(this);
 #if ASSERT
 solver->assertWatches(p->val());
 #endif
@@ -360,10 +360,10 @@ solver->assertWatches(p->val());
 
 	inline void Clause::detach(Solver* solver){
 		for(auto x=solver->watches[-literals[0].val()].begin();x!=solver->watches[-literals[0].val()].end();++x){
-			if(*(*x).cref==*this) {solver->watches[-literals[0].val()].erase(x);break;}
+			if(*(*x)==*this) {solver->watches[-literals[0].val()].erase(x);break;}
 		}
 		for(auto x=solver->watches[-literals[1].val()].begin();x!=solver->watches[-literals[1].val()].end();++x){
-			if(*(*x).cref==*this) {solver->watches[-literals[1].val()].erase(x);break;}
+			if(*(*x)==*this) {solver->watches[-literals[1].val()].erase(x);break;}
 		}
 
 	};
