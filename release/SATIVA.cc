@@ -42,6 +42,7 @@ int main(int argc, char** argv){
 		if(argv[i][0]=='-'){
 			if(argv[i][1]=='f') options.filename=argv[i+1];
 			else if(argv[i][1]=='p') options.pigeonhole=atoi(argv[i+1]);
+			else if(argv[i][1]=='h') printUsage(argv);
 		}
 	}
 	

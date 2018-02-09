@@ -44,8 +44,10 @@ namespace tabular{
 		cout<<"\t"<<solver->nL();
 		cout<<"\t\t\t";
 		cout<<"|\n";
-		cout<<"|\tHeuristics: VSIDS, 1UIP";
-		cout<<"\t\t\t";
+		cout<<"|\tHeuristics: VSIDS, 1UIP, luby sequence";
+		cout<<"\t";
+		cout<<"|\n";
+		cout<<"|\t\tsemplification, init sussumption";
 		cout<<"|\n";
 		cout<<"|-----------------------------------------------|\n";
 		cout<<"\t-> problem: "<<solver->pName()<<"\n";
@@ -93,6 +95,7 @@ namespace tabular{
 		cout<<"        CPU time: "<<((float)clk)/CLOCKS_PER_SEC<<" s\n";
 		cout<<"        Learnt clauses: "<<solver->nLearnts()<<"\n";
 		cout<<"        #Restarts: "<<solver->nRestart()<<"\n";
+		cout<<"        Deleted clause: "<<solver->getDeletedClause()<<"\n";
 		cout<<"        Decisions: "<<solver->nDecision()<<"\n";
 		cout<<"        Propagations: "<<solver->nPropagation()<<"\n";
 
@@ -106,10 +109,12 @@ namespace tabular{
 		cout<<"|                     SAT                       |\n";
 
 		cout<<"|-----------------------------------------------|\n";
+#if VERBOSE
 		cout<<"|-------------------< MODEL >-------------------|\n";
 		cout<<"{ ";
 		for(size_t i=0; i<model.size();++i){if(model[i]!=U) std::cout<<((model[i]==T)?"x_":"-x_")<<i<<"; ";};
 		cout<<"}\n";
+#endif
 		printUsage(solver);
 	};
 	
