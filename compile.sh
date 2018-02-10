@@ -1,6 +1,9 @@
-if [ ! -d "build" ]; then
-	mkdir build
+if [ -d "build" ]; then
+	echo "Cleaning build directory..."
+	rm -rf build
+	echo "Build directory cleaned!"
 fi
+mkdir build
 cd build
 if [ "$1" ==  "proof" ]; then
 	echo -e "\e[33m############### Generating sativa with proof generator...\e[39m"

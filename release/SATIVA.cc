@@ -18,6 +18,8 @@ Solver s;
 void printUsage(char** argv);
 void launchOnFile(Solver* solver);
 void launchOnPig(Solver* solver);
+void launchOnSTDIN(Solver* solver);
+
 static void exit_sig(int signum){
 	printf("\nInterrupted by user\n");
 	tabular::printUsage(&s);
@@ -33,7 +35,7 @@ int main(int argc, char** argv){
 	
 
 #if VERBOSE
-	system("setterm -cursor off");
+	if(argc>1) system("setterm -cursor off");
 #endif
 
 	signal(SIGINT, exit_sig);
@@ -43,6 +45,11 @@ int main(int argc, char** argv){
 			if(argv[i][1]=='f') options.filename=argv[i+1];
 			else if(argv[i][1]=='p') options.pigeonhole=atoi(argv[i+1]);
 			else if(argv[i][1]=='h') printUsage(argv);
+			else if(argv[i][1]=='-'){
+				if(argv[i][2]=='f') options.filename=argv[i+1];
+				else if(argv[i][2]=='p') options.pigeonhole=atoi(argv[i+1]);
+				else if(argv[i][2]=='h') printUsage(argv);	
+			}
 		}
 	}
 	
@@ -51,9 +58,9 @@ int main(int argc, char** argv){
 	}else if(options.pigeonhole>0){
 		launchOnPig(&s);
 	}else
-		printUsage(argv);
+		launchOnSTDIN(&s);
 #if VERBOSE
-	system("setterm -cursor on");
+	if(argc>1) system("setterm -cursor on");
 #endif
 	return 0;
 }
@@ -85,9 +92,25 @@ void launchOnPig(Solver* solver){
 
 };
 
+void launchOnSTDIN(Solver* solver){
+	solver->setName("stdin formula");
+	tabular::fillFromSTDIN(solver);
+	tabular::printInit(solver);
+	tabular::printLaunch(solver);
+	bool res=solver->CDCL();
+	if(res)tabular::printModel(solver);
+	else{
+		tabular::generateGV(solver);
+	}
+	tabular::printEnd();
+};
+
 void printUsage(char** argv){
 	std::cout<<"\nUsage :\n";
+	std::cout<<"\t"<<argv[0]<<"\t\t\t\t\twill launch stding reader and then CDCL procedure on stdin specified formula.\n";
 	std::cout<<"\t"<<argv[0]<<" -f [filename] or -file [filename]\twill launch CDCL procedure on an input file.\n";
 	std::cout<<"\t"<<argv[0]<<" -p [number] or -pigeonhole [number]\twill launch CDCL proceure on a pigeonhole instance with size [number].\n";
 	std::cout<<"\n\n";
+	system("setterm -cursor on");
+	exit(0);
 };

@@ -78,6 +78,32 @@ namespace tabular{
 
 	};
 
+	void fillFromSTDIN(Solver* solver){
+		int nL, nC;
+		std::cout<<"Insert #literals: ";
+		std::cin>>nL;
+		std::cout<<"Insert #Clauses: ";
+		std::cin>>nC;
+		solver->init(nL, nC);
+		std::cout<<"\n###### DIMACS ######\n";
+		std::cout<<"I° example clause: 1 2 0";
+		std::cout<<"\nII° example clause: 1\n2 0";
+		std::cout<<"\n#### END EXAMPLE ####\n\n";
+		for(unsigned int i=0; i<nC;++i){
+			std::vector<Literal> lits_val;
+			std::cout<<"Clause "<<i+1<<": ";
+			int l;
+			scanf("%i", &l);
+			while(l!=0){
+				lits_val.push_back(Literal(l));
+				if(l>nL)std::cerr<<"PARSING ERROR: current literal:"<<l<<", total literals declared: "<<nL<<"\n";
+				assert(l<=nL);
+				scanf("%i", &l);
+			}
+			solver->newClause(lits_val, false);
+		}
+	};
+
 
 	void printLaunch(Solver* solver){
 		cout<<"|--------- Launching CDCL procedure ------------|\n";
