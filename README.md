@@ -34,6 +34,8 @@ cmake .. -DP=1
 ```
 will set the proof mode ON.
 
+WARNING: cmake set flag optimize with -O2, so some warnings could appears!
+
 ## Execute
 ```
 ./sativa -h

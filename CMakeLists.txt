@@ -20,7 +20,7 @@ configure_file (
 
 include (cmake_files/libraries.cmake)
 
-set (CMAKE_CXX_FLAGS )
+set (CMAKE_CXX_FLAGS "-O2")
 
 include_directories(include)
 add_subdirectory (src)

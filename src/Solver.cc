@@ -298,8 +298,16 @@ void Solver::undoOne(){
 int Solver::select(){
 	int max_so_far=-10;
 	var x = 0;
-	for(int i=-nLiterals;i<nLiterals+1;++i){
-		if(i==0) continue;
+	int i=-nLiterals;
+	unsigned int ass_i=nLiterals;
+	for(;i<0;++i, ass_i--){
+		if(max_so_far<activity[i]&&assignments[ass_i]==U){
+			x=i;
+			max_so_far=activity[i];
+		}
+	}
+	i=1;
+	for(;i<nLiterals+1;++i){
 		if(max_so_far<activity[i]&&assignments[i]==U){
 			x=i;
 			max_so_far=activity[i];
