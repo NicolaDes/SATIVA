@@ -93,12 +93,12 @@ namespace tabular{
 			std::vector<Literal> lits_val;
 			std::cout<<"Clause "<<i+1<<": ";
 			int l;
-			scanf("%i", &l);
+			int ret = scanf("%i", &l);
 			while(l!=0){
 				lits_val.push_back(Literal(l));
 				if(l>nL)std::cerr<<"PARSING ERROR: current literal:"<<l<<", total literals declared: "<<nL<<"\n";
 				assert(l<=nL);
-				scanf("%i", &l);
+				ret=scanf("%i", &l);
 			}
 			solver->newClause(lits_val, false);
 		}

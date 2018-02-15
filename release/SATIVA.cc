@@ -25,7 +25,7 @@ static void exit_sig(int signum){
 	tabular::printUsage(&s);
 	tabular::printEnd();
 #if VERBOSE
-	system("setterm -cursor on");
+	int ret= system("setterm -cursor on");
 #endif
 	exit(-1);
 }
@@ -35,7 +35,7 @@ int main(int argc, char** argv){
 	
 
 #if VERBOSE
-	if(argc>1) system("setterm -cursor off");
+	if(argc>1) int ret=system("setterm -cursor off");
 #endif
 
 	signal(SIGINT, exit_sig);
@@ -60,7 +60,7 @@ int main(int argc, char** argv){
 	}else
 		launchOnSTDIN(&s);
 #if VERBOSE
-	if(argc>1) system("setterm -cursor on");
+	if(argc>1) int ret=system("setterm -cursor on");
 #endif
 	return 0;
 }
@@ -111,6 +111,6 @@ void printUsage(char** argv){
 	std::cout<<"\t"<<argv[0]<<" -f [filename] or -file [filename]\twill launch CDCL procedure on an input file.\n";
 	std::cout<<"\t"<<argv[0]<<" -p [number] or -pigeonhole [number]\twill launch CDCL proceure on a pigeonhole instance with size [number].\n";
 	std::cout<<"\n\n";
-	system("setterm -cursor on");
+	int ret=system("setterm -cursor on");
 	exit(0);
 };

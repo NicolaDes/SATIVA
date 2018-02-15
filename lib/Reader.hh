@@ -23,11 +23,11 @@ namespace Dimacs{
 		}
 		bool intro=true;
 		while(intro){
-			fscanf(fp, "%c", &c);
-			if(c=='c'){while(c!=EOL) fscanf(fp, "%c", &c);}
+			int ret = fscanf(fp, "%c", &c);
+			if(c=='c'){while(c!=EOL) ret=fscanf(fp, "%c", &c);}
 			else if(c=='p'){
-				while(c!='f') fscanf(fp, "%c", &c);
-				fscanf(fp, "%i %i", &nL, &nC);
+				while(c!='f') ret=fscanf(fp, "%c", &c);
+				ret= fscanf(fp, "%i %i", &nL, &nC);
 				intro=false;
 			}
 		}
